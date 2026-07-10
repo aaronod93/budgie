@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AssignController;
+use App\Http\Controllers\Api\V1\AuthTokenController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CategoryGroupController;
@@ -14,10 +15,14 @@ use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::post('v1/auth/token', [AuthTokenController::class, 'store'])->middleware('throttle:6,1');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::delete('v1/auth/token', [AuthTokenController::class, 'destroy']);
 
     Route::prefix('v1')->group(function () {
         Route::apiResource('budgets', BudgetController::class);

@@ -7,7 +7,7 @@ the punches. See [PLAN.md](PLAN.md) for the full architecture and roadmap.
 |---|---|---|
 | API | Laravel 13, MariaDB, Sanctum + Fortify (MFA), Socialite | [api/](api/) |
 | Web | Nuxt 4 SPA, Pinia, Tailwind CSS 4 | [web/](web/) |
-| Mobile | Flutter (Phase 3) | `mobile/` |
+| Mobile | Flutter, Riverpod, token auth + biometric unlock | [mobile/](mobile/) |
 
 ## Local development
 
@@ -32,11 +32,18 @@ npm run dev
 
 Register an account at http://localhost:3000/register and you're in.
 
+```sh
+# 4. Mobile — Android emulator (reaches the API via http://10.0.2.2:8000)
+cd mobile
+flutter run
+```
+
 ## Tests
 
 ```sh
-cd api && vendor/bin/pest      # API test suite (in-memory SQLite)
-cd web && npm run typecheck    # Nuxt type safety
+cd api && vendor/bin/pest && vendor/bin/pint --test   # API tests + style
+cd web && npm run typecheck                           # Nuxt type safety
+cd mobile && flutter analyze && flutter test          # Mobile static + unit
 ```
 
 ## Auth notes
@@ -46,4 +53,8 @@ cd web && npm run typecheck    # Nuxt type safety
 - MFA is TOTP via Fortify (`/user/two-factor-authentication`), with recovery codes.
 - Google sign-on (Socialite) is stubbed by `GOOGLE_*` env vars — needs OAuth credentials
   from Google Cloud Console before it can be enabled.
-- Mobile (Phase 3) will use Sanctum personal access tokens + device biometric unlock.
+- Mobile signs in once via `POST /api/v1/auth/token` (email + password, plus a TOTP or
+  recovery code when MFA is on) and stores the Sanctum personal access token in
+  secure storage; app opens are gated by a biometric prompt (`local_auth`).
+  Note: the Android manifest allows cleartext HTTP for local development — restrict
+  this before any production build.
