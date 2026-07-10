@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Budget;
 use App\Models\SubTransaction;
+use App\Models\Target;
 use App\Models\Transaction;
 use Carbon\CarbonImmutable;
 
@@ -37,7 +38,7 @@ class MonthService
 
         $categories = $budget->categories()
             ->where(fn ($q) => $q->whereNull('internal_type')->orWhere('internal_type', 'credit_card_payment'))
-            ->with('group')
+            ->with(['group', 'target'])
             ->orderBy('sort_order')
             ->get();
 
@@ -145,15 +146,20 @@ class MonthService
                 'sort_order' => $category->group->sort_order,
                 'categories' => [],
             ];
+            $rowAssigned = $assigned[$category->id][$key] ?? 0;
+            $rowAvailable = $available[$category->id] ?? 0;
             $groups[$groupUuid]['categories'][] = [
                 'uuid' => $category->uuid,
                 'name' => $category->name,
                 'is_credit_card_payment' => $isPayment,
-                'assigned' => $assigned[$category->id][$key] ?? 0,
+                'assigned' => $rowAssigned,
                 'activity' => $isPayment
                     ? ($paymentActivity[$category->id] ?? 0)
                     : ($activity[$category->id][$key] ?? 0),
-                'available' => $available[$category->id] ?? 0,
+                'available' => $rowAvailable,
+                'target' => $category->target === null
+                    ? null
+                    : $this->targetPayload($category->target, $rowAssigned, $rowAvailable, $target),
             ];
         }
 
@@ -173,8 +179,58 @@ class MonthService
             'assigned_total' => $sumOf('assigned'),
             'activity_total' => $sumOf('activity'),
             'available_total' => $sumOf('available'),
+            'underfunded_total' => array_sum(array_map(
+                fn ($g) => array_sum(array_map(
+                    fn ($c) => $c['target']['underfunded'] ?? 0,
+                    $g['categories'],
+                )),
+                $groups,
+            )),
             'groups' => $groups,
         ];
+    }
+
+    /**
+     * Target progress for one category in the viewed month (Rule 2: Embrace
+     * Your True Expenses).
+     */
+    private function targetPayload(Target $goal, int $assigned, int $available, CarbonImmutable $month): array
+    {
+        [$underfunded, $progressBasis] = match ($goal->type) {
+            // "Needed for spending": refill available up to the amount.
+            'refill_monthly' => [max(0, $goal->amount - $available), $available],
+            // "Savings builder": assign the amount every month.
+            'monthly_builder' => [max(0, $goal->amount - $assigned), $assigned],
+            // "Balance by date": spread what is still needed over the months left.
+            'balance_by_date' => $this->balanceByDate($goal, $assigned, $available, $month),
+        };
+
+        return [
+            'type' => $goal->type,
+            'amount' => $goal->amount,
+            'target_date' => $goal->target_date?->toDateString(),
+            'underfunded' => $underfunded,
+            'progress' => $goal->amount <= 0
+                ? 100
+                : max(0, min(100, (int) round($progressBasis / $goal->amount * 100))),
+        ];
+    }
+
+    /** @return array{0: int, 1: int} [underfunded, progressBasis] */
+    private function balanceByDate(Target $goal, int $assigned, int $available, CarbonImmutable $month): array
+    {
+        $end = $goal->target_date?->startOfMonth() ?? $month;
+        $monthsRemaining = max(
+            1,
+            ($end->year - $month->year) * 12 + ($end->month - $month->month) + 1,
+        );
+
+        // What the balance would be with nothing assigned this month.
+        $baseline = $available - $assigned;
+        $stillNeeded = max(0, $goal->amount - $baseline);
+        $neededThisMonth = (int) ceil($stillNeeded / $monthsRemaining);
+
+        return [max(0, $neededThisMonth - $assigned), $available];
     }
 
     /** @return array<int, array<string, int>> category_id => ['YYYY-MM' => assigned] */

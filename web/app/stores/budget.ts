@@ -28,6 +28,14 @@ export interface CategoryGroupFull {
   categories: CategoryRef[]
 }
 
+export interface CategoryTarget {
+  type: 'refill_monthly' | 'monthly_builder' | 'balance_by_date'
+  amount: number
+  target_date: string | null
+  underfunded: number
+  progress: number
+}
+
 export interface MonthCategory {
   uuid: string
   name: string
@@ -35,6 +43,7 @@ export interface MonthCategory {
   assigned: number
   activity: number
   available: number
+  target: CategoryTarget | null
 }
 
 export interface MonthGroup {
@@ -51,6 +60,7 @@ export interface MonthPayload {
   assigned_total: number
   activity_total: number
   available_total: number
+  underfunded_total: number
   groups: MonthGroup[]
 }
 
@@ -138,9 +148,26 @@ export const useBudgetStore = defineStore('budget', () => {
     )
   }
 
+  async function assignUnderfunded(): Promise<void> {
+    month.value = await apiFetch<MonthPayload>(
+      `${base.value}/months/${monthKey.value}/assign-underfunded`,
+      { method: 'POST' },
+    )
+  }
+
+  async function setTarget(categoryUuid: string, target: { type: string, amount: number, target_date?: string | null }): Promise<void> {
+    await apiFetch(`${base.value}/categories/${categoryUuid}/target`, { method: 'PUT', body: target })
+    await loadMonth()
+  }
+
+  async function removeTarget(categoryUuid: string): Promise<void> {
+    await apiFetch(`${base.value}/categories/${categoryUuid}/target`, { method: 'DELETE' })
+    await loadMonth()
+  }
+
   return {
     budgets, current, accounts, groups, month, monthKey, initialized, base,
     init, selectBudget, createBudget, loadAccounts, loadGroups, addAccount,
-    loadMonth, shiftMonth, assign, moveMoney,
+    loadMonth, shiftMonth, assign, moveMoney, assignUnderfunded, setTarget, removeTarget,
   }
 })

@@ -8,6 +8,7 @@ interface Txn {
   amount: number
   memo: string | null
   cleared: 'uncleared' | 'cleared' | 'reconciled'
+  approved: boolean
   payee: { uuid: string, name: string } | null
   category: { uuid: string, name: string } | null
   transfer_account_uuid: string | null
@@ -36,6 +37,9 @@ const editingUuid = ref<string | null>(null)
 const showReconcile = ref(false)
 const statementBalance = ref('')
 const reconcileMessage = ref('')
+const search = ref('')
+const showImport = ref(false)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const blankForm = () => ({
   date: new Date().toISOString().slice(0, 10),
@@ -57,13 +61,21 @@ const editingTransfer = computed(() =>
 )
 
 watch([() => store.current, accountUuid], load, { immediate: true })
+watch(search, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(load, 300)
+})
+
+const unapprovedCount = computed(() => transactions.value.filter(t => !t.approved).length)
 
 async function load() {
   if (!store.current) return
   loadingRows.value = true
   try {
+    const query = new URLSearchParams({ account_id: accountUuid.value })
+    if (search.value.trim()) query.set('search', search.value.trim())
     const [txns, scheds] = await Promise.all([
-      apiFetch<{ data: Txn[] }>(`${store.base}/transactions?account_id=${accountUuid.value}`),
+      apiFetch<{ data: Txn[] }>(`${store.base}/transactions?${query}`),
       apiFetch<{ data: Scheduled[] }>(`${store.base}/scheduled-transactions?account_id=${accountUuid.value}`),
     ])
     transactions.value = txns.data
@@ -71,6 +83,14 @@ async function load() {
   } finally {
     loadingRows.value = false
   }
+}
+
+async function approveAll() {
+  await apiFetch(`${store.base}/transactions-approve-all`, {
+    method: 'POST',
+    body: { account_id: accountUuid.value },
+  })
+  await load()
 }
 
 function rowLabel(txn: Txn): string {
@@ -213,12 +233,33 @@ async function remove(txn: Txn) {
         </div>
         <button
           class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-white"
+          @click="showImport = true"
+        >
+          Import
+        </button>
+        <button
+          class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-white"
           @click="showReconcile = true; statementBalance = centsToInput(account?.cleared_balance ?? 0)"
         >
           Reconcile
         </button>
       </div>
     </header>
+
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <input
+        v-model="search"
+        placeholder="Search payee or memo…"
+        class="w-64 rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+      >
+      <button
+        v-if="unapprovedCount > 0"
+        class="rounded-md border border-sky-400 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-800 hover:bg-sky-100"
+        @click="approveAll"
+      >
+        Approve {{ unapprovedCount }} imported
+      </button>
+    </div>
 
     <p v-if="reconcileMessage" class="mb-4 rounded-md bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
       {{ reconcileMessage }}
@@ -351,7 +392,10 @@ async function remove(txn: Txn) {
               />
             </td>
             <td class="cursor-pointer px-3 py-2 text-slate-600" @click="startEdit(txn)">{{ txn.date }}</td>
-            <td class="cursor-pointer px-3 py-2" @click="startEdit(txn)">{{ txn.payee?.name ?? '—' }}</td>
+            <td class="cursor-pointer px-3 py-2" @click="startEdit(txn)">
+              {{ txn.payee?.name ?? '—' }}
+              <span v-if="!txn.approved" class="ml-1 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700">New</span>
+            </td>
             <td class="cursor-pointer px-3 py-2 text-slate-600" @click="startEdit(txn)">{{ rowLabel(txn) }}</td>
             <td class="cursor-pointer px-3 py-2 text-slate-400" @click="startEdit(txn)">{{ txn.memo }}</td>
             <td
@@ -369,6 +413,13 @@ async function remove(txn: Txn) {
         </tbody>
       </table>
     </div>
+
+    <ImportWizard
+      v-if="showImport"
+      :account-uuid="accountUuid"
+      @close="showImport = false"
+      @done="load(); store.loadAccounts()"
+    />
 
     <!-- Reconcile modal -->
     <div v-if="showReconcile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

@@ -33,6 +33,13 @@ class RecordTransaction
             }
 
             $transaction = $this->makeTransaction($budget, $data);
+
+            // Auto-categorise from the payee's default when the caller didn't
+            // choose a category (an explicit null means "uncategorised").
+            if (! array_key_exists('category_id', $data) && empty($data['splits'])) {
+                $this->applyDefaultCategory($transaction);
+            }
+
             $transaction->save();
 
             $this->syncSplits($budget, $transaction, $data['splits'] ?? []);
@@ -154,7 +161,7 @@ class RecordTransaction
         $account = $budget->accounts()->findOrFail($data['account_id']);
 
         $transaction = new Transaction(array_intersect_key($data, array_flip([
-            'date', 'amount', 'category_id', 'memo', 'cleared', 'import_id',
+            'date', 'amount', 'category_id', 'memo', 'cleared', 'approved', 'import_id',
         ])));
         $transaction->budget_id = $budget->id;
         $transaction->account_id = $account->id;
@@ -187,6 +194,19 @@ class RecordTransaction
                 'category_id' => $split['category_id'] ?? null,
                 'memo' => $split['memo'] ?? null,
             ]);
+        }
+    }
+
+    private function applyDefaultCategory(Transaction $transaction): void
+    {
+        if ($transaction->payee_id === null || $transaction->category_id !== null) {
+            return;
+        }
+
+        $default = Payee::whereKey($transaction->payee_id)->value('default_category_id');
+
+        if ($default !== null && $transaction->account->on_budget) {
+            $transaction->category_id = $default;
         }
     }
 

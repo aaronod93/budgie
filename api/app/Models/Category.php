@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'hidden', 'sort_order', 'category_group_id'])]
@@ -29,6 +30,11 @@ class Category extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(CategoryGroup::class, 'category_group_id');
+    }
+
+    public function target(): HasOne
+    {
+        return $this->hasOne(Target::class);
     }
 
     public function isReadyToAssign(): bool

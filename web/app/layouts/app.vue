@@ -50,6 +50,20 @@ async function logout() {
         >
           Budget
         </NuxtLink>
+        <NuxtLink
+          to="/reports"
+          class="block rounded-md px-3 py-2 font-medium hover:bg-emerald-800"
+          active-class="bg-emerald-800"
+        >
+          Reports
+        </NuxtLink>
+        <NuxtLink
+          to="/payees"
+          class="block rounded-md px-3 py-2 font-medium hover:bg-emerald-800"
+          active-class="bg-emerald-800"
+        >
+          Payees
+        </NuxtLink>
       </nav>
 
       <div class="mt-6 flex-1 overflow-y-auto px-2">

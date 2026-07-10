@@ -23,4 +23,9 @@ class Payee extends Model
     {
         return $this->belongsTo(Account::class, 'transfer_account_id');
     }
+
+    public function defaultCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'default_category_id');
+    }
 }

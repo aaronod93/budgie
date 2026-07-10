@@ -67,8 +67,8 @@ These four rules drive every design decision below:
 - **Payee management**: rename/merge, per-payee default category (auto-categorisation).
 - **Reports**: spending by category/payee (pie + trends), net worth over time,
   income vs expense, Age of Money chart.
-- **CSV/OFX/QIF import** with duplicate detection (import_id hashing) and a
-  column-mapping wizard.
+- **CSV import** with duplicate detection (import_id hashing) and a
+  column-mapping wizard. (OFX/QIF: only if a real bank export needs it.)
 - **Search & filters** on the transaction register.
 
 ### Phase 4 — Polish
@@ -292,7 +292,7 @@ budgie/
 | **1. Budget core (API+web)** ✅ | Budgets, accounts, categories, transactions (incl. splits/transfers), monthly_budgets, RTA + available math, budget screen, register | Usable single-device web budget |
 | **2. The hard mechanics** ✅ | Credit card categories, reconciliation, scheduled transactions, move-money UX, month navigation | Feature parity with core YNAB loop |
 | **3. Mobile** ✅ | Flutter app (register + budget + add-transaction) as a pure online client | Phone capture, web planning |
-| **4. QoL** | Targets/goals, reports, CSV/OFX import, payee rules, search | Daily-driver replacement for YNAB |
+| **4. QoL** ✅ | Targets/goals, reports, CSV import, payee rules, search | Daily-driver replacement for YNAB |
 | **5. Sharing & live** | Shared budgets (partner invite), notifications, Reverb live sync | Multi-user budgeting |
 
 ## 10. Decisions (resolved 2026-07-10)

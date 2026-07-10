@@ -25,6 +25,9 @@ class TransactionController extends Controller
             'account_id' => ['sometimes', 'uuid'],
             'category_id' => ['sometimes', 'uuid'],
             'since' => ['sometimes', 'date'],
+            'until' => ['sometimes', 'date'],
+            'search' => ['sometimes', 'string', 'max:100'],
+            'unapproved' => ['sometimes', 'boolean'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:1000'],
         ]);
 
@@ -41,6 +44,18 @@ class TransactionController extends Controller
         }
         if (isset($filters['since'])) {
             $query->where('date', '>=', $filters['since']);
+        }
+        if (isset($filters['until'])) {
+            $query->whereDate('date', '<=', $filters['until']);
+        }
+        if (! empty($filters['search'])) {
+            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
+            $query->where(fn ($q) => $q
+                ->where('memo', 'like', $term)
+                ->orWhereHas('payee', fn ($p) => $p->where('name', 'like', $term)));
+        }
+        if ($request->boolean('unapproved')) {
+            $query->where('approved', false);
         }
 
         return TransactionResource::collection($query->get());

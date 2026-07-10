@@ -9,6 +9,8 @@ const editing = ref<string | null>(null)
 const editValue = ref('')
 const moveTarget = ref<MonthCategory | null>(null)
 const moveForm = reactive({ to: 'rta', amount: '' })
+const goalCategory = ref<MonthCategory | null>(null)
+const goalForm = reactive({ type: 'refill_monthly', amount: '', target_date: '' })
 const error = ref('')
 
 const monthLabel = computed(() => {
@@ -70,6 +72,47 @@ function availableClass(cents: number): string {
   if (cents < 0) return 'bg-red-100 text-red-700'
   return 'bg-slate-100 text-slate-500'
 }
+
+function openGoal(category: MonthCategory) {
+  goalCategory.value = category
+  goalForm.type = category.target?.type ?? 'refill_monthly'
+  goalForm.amount = category.target ? centsToInput(category.target.amount) : ''
+  goalForm.target_date = category.target?.target_date ?? ''
+}
+
+async function saveGoal() {
+  if (!goalCategory.value) return
+  const amount = parseMoney(goalForm.amount)
+  if (!amount || amount <= 0) return
+  error.value = ''
+  try {
+    await store.setTarget(goalCategory.value.uuid, {
+      type: goalForm.type,
+      amount,
+      target_date: goalForm.type === 'balance_by_date' ? goalForm.target_date : null,
+    })
+    goalCategory.value = null
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not save the target.'
+  }
+}
+
+async function deleteGoal() {
+  if (!goalCategory.value) return
+  await store.removeTarget(goalCategory.value.uuid)
+  goalCategory.value = null
+}
+
+async function assignAllUnderfunded() {
+  error.value = ''
+  try {
+    await store.assignUnderfunded()
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not assign underfunded.'
+  }
+}
 </script>
 
 <template>
@@ -81,13 +124,22 @@ function availableClass(cents: number): string {
         <button class="rounded-md border border-slate-300 px-2.5 py-1 hover:bg-white" @click="store.shiftMonth(1)">›</button>
       </div>
 
-      <div
-        v-if="store.month"
-        class="rounded-lg px-5 py-2 text-center"
-        :class="store.month.ready_to_assign >= 0 ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'"
-      >
-        <p class="text-lg font-bold leading-tight">{{ formatMoney(store.month.ready_to_assign, store.current?.currency) }}</p>
-        <p class="text-xs opacity-80">Ready to Assign</p>
+      <div class="flex items-center gap-3">
+        <button
+          v-if="store.month && store.month.underfunded_total > 0"
+          class="rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+          @click="assignAllUnderfunded"
+        >
+          Assign underfunded ({{ formatMoney(store.month.underfunded_total, store.current?.currency) }})
+        </button>
+        <div
+          v-if="store.month"
+          class="rounded-lg px-5 py-2 text-center"
+          :class="store.month.ready_to_assign >= 0 ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'"
+        >
+          <p class="text-lg font-bold leading-tight">{{ formatMoney(store.month.ready_to_assign, store.current?.currency) }}</p>
+          <p class="text-xs opacity-80">Ready to Assign</p>
+        </div>
       </div>
     </header>
 
@@ -122,7 +174,30 @@ function availableClass(cents: number): string {
               :key="category.uuid"
               class="border-b border-slate-100 hover:bg-slate-50"
             >
-              <td class="px-4 py-2">{{ category.name }}</td>
+              <td class="group px-4 py-2">
+                <div class="flex items-center gap-2">
+                  <span>{{ category.name }}</span>
+                  <button
+                    class="text-slate-300 opacity-0 transition group-hover:opacity-100 hover:text-emerald-700"
+                    :class="{ 'opacity-100 text-emerald-600': category.target }"
+                    title="Set target"
+                    @click="openGoal(category)"
+                  >◎</button>
+                </div>
+                <div v-if="category.target" class="mt-1 flex items-center gap-2">
+                  <div class="h-1.5 w-32 overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      class="h-full rounded-full"
+                      :class="category.target.underfunded > 0 ? 'bg-amber-400' : 'bg-emerald-500'"
+                      :style="{ width: `${category.target.progress}%` }"
+                    />
+                  </div>
+                  <span v-if="category.target.underfunded > 0" class="text-xs text-amber-700">
+                    {{ formatMoney(category.target.underfunded, store.current?.currency) }} more needed
+                  </span>
+                  <span v-else class="text-xs text-emerald-700">Funded</span>
+                </div>
+              </td>
               <td class="px-4 py-2 text-right">
                 <input
                   v-if="editing === category.uuid"
@@ -171,6 +246,47 @@ function availableClass(cents: number): string {
           </tr>
         </tfoot>
       </table>
+    </div>
+
+    <!-- Target modal -->
+    <div v-if="goalCategory" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        <h2 class="mb-1 text-lg font-semibold">Target for {{ goalCategory.name }}</h2>
+        <p class="mb-4 text-sm text-slate-500">Rule 2: plan for true expenses by dripping money in monthly.</p>
+        <form class="space-y-4" @submit.prevent="saveGoal">
+          <div>
+            <label class="mb-1 block text-sm font-medium">Type</label>
+            <select v-model="goalForm.type" class="w-full rounded-md border border-slate-300 px-3 py-2">
+              <option value="refill_monthly">Refill available up to… (needed for spending)</option>
+              <option value="monthly_builder">Assign each month… (savings builder)</option>
+              <option value="balance_by_date">Reach a balance by a date</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium">Amount</label>
+            <input v-model="goalForm.amount" inputmode="decimal" required class="w-full rounded-md border border-slate-300 px-3 py-2">
+          </div>
+          <div v-if="goalForm.type === 'balance_by_date'">
+            <label class="mb-1 block text-sm font-medium">By date</label>
+            <input v-model="goalForm.target_date" type="date" required class="w-full rounded-md border border-slate-300 px-3 py-2">
+          </div>
+          <div class="flex items-center justify-between">
+            <button
+              v-if="goalCategory.target"
+              type="button"
+              class="text-sm text-red-600 hover:underline"
+              @click="deleteGoal"
+            >
+              Remove target
+            </button>
+            <span v-else />
+            <div class="flex gap-2">
+              <button type="button" class="rounded-md px-4 py-2 text-slate-600 hover:bg-slate-100" @click="goalCategory = null">Cancel</button>
+              <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Move money modal -->

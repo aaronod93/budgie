@@ -13,6 +13,10 @@ class PayeeResource extends JsonResource
             'uuid' => $this->uuid,
             'name' => $this->name,
             'transfer_account_uuid' => $this->whenLoaded('transferAccount', fn () => $this->transferAccount?->uuid),
+            'default_category' => $this->whenLoaded('defaultCategory', fn () => $this->defaultCategory ? [
+                'uuid' => $this->defaultCategory->uuid,
+                'name' => $this->defaultCategory->name,
+            ] : null),
         ];
     }
 }
