@@ -1,34 +1,48 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
 
-const auth = useAuthStore()
+const store = useBudgetStore()
+const name = ref('My Budget')
+const error = ref('')
+const busy = ref(false)
 
-async function logout() {
-  await auth.logout()
-  await navigateTo('/login')
+onMounted(async () => {
+  await store.init()
+  if (store.current) await navigateTo('/budget')
+})
+
+async function create() {
+  error.value = ''
+  busy.value = true
+  try {
+    await store.createBudget(name.value)
+    await navigateTo('/budget')
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not create the budget.'
+  } finally {
+    busy.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl p-6">
-    <header class="mb-8 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-emerald-700">Budgie</h1>
-      <div class="flex items-center gap-4">
-        <span class="text-sm text-slate-600">{{ auth.user?.name }}</span>
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div v-if="store.initialized && !store.current" class="w-full max-w-sm rounded-xl bg-white p-8 shadow">
+      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Welcome to Budgie</h1>
+      <p class="mb-6 text-sm text-slate-500">Name your first budget to get started.</p>
+      <form class="space-y-4" @submit.prevent="create">
+        <input v-model="name" required class="w-full rounded-md border border-slate-300 px-3 py-2">
+        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
         <button
-          class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
-          @click="logout"
+          type="submit"
+          :disabled="busy"
+          class="w-full rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
         >
-          Sign out
+          {{ busy ? 'Creating…' : 'Create budget' }}
         </button>
-      </div>
-    </header>
-
-    <div class="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
-      <p class="text-lg font-medium">Your budget will live here</p>
-      <p class="mt-2 text-sm text-slate-500">
-        Phase 1 brings accounts, envelopes and the monthly budget screen.
-      </p>
+      </form>
     </div>
+    <p v-else class="text-slate-400">Loading…</p>
   </div>
 </template>

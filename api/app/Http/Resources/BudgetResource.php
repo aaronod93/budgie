@@ -13,6 +13,9 @@ class BudgetResource extends JsonResource
             'uuid' => $this->uuid,
             'name' => $this->name,
             'currency' => $this->currency,
+            'ready_to_assign_category_uuid' => $this->categories()
+                ->where('internal_type', 'ready_to_assign')
+                ->value('uuid'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
