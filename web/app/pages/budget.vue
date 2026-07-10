@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MonthCategory } from '~/stores/budget'
+import type { MonthCategory, MonthGroup } from '~/stores/budget'
 
 definePageMeta({ middleware: 'auth', layout: 'app' })
 
@@ -11,7 +11,27 @@ const moveTarget = ref<MonthCategory | null>(null)
 const moveForm = reactive({ to: 'rta', amount: '' })
 const goalCategory = ref<MonthCategory | null>(null)
 const goalForm = reactive({ type: 'refill_monthly', amount: '', target_date: '' })
+const editMode = ref(false)
+const filter = ref<'all' | 'underfunded' | 'available'>('all')
 const error = ref('')
+
+const visibleGroups = computed(() => {
+  const groups = store.month?.groups ?? []
+  if (filter.value === 'all') return groups
+  return groups
+    .map(group => ({
+      ...group,
+      categories: group.categories.filter(category =>
+        filter.value === 'underfunded'
+          ? (category.target?.underfunded ?? 0) > 0 || category.available < 0
+          : category.available > 0),
+    }))
+    .filter(group => group.categories.length > 0)
+})
+
+function groupTotal(group: MonthGroup, field: 'assigned' | 'activity' | 'available'): number {
+  return group.categories.reduce((sum, category) => sum + category[field], 0)
+}
 
 const monthLabel = computed(() => {
   if (!store.month) return ''
@@ -126,6 +146,15 @@ async function assignAllUnderfunded() {
 
       <div class="flex items-center gap-3">
         <button
+          class="rounded-md border px-3 py-2 text-sm"
+          :class="editMode
+            ? 'border-accent-400 bg-accent-400/10 font-medium text-accent-300'
+            : 'border-ink-600 text-mist-200 hover:bg-ink-700'"
+          @click="editMode = !editMode"
+        >
+          {{ editMode ? 'Done editing' : 'Edit categories' }}
+        </button>
+        <button
           v-if="store.month && store.month.underfunded_total > 0"
           class="rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20"
           @click="assignAllUnderfunded"
@@ -143,6 +172,24 @@ async function assignAllUnderfunded() {
       </div>
     </header>
 
+    <div v-if="!editMode" class="mb-4 flex gap-2">
+      <button
+        v-for="option in ([
+          { key: 'all', label: 'All' },
+          { key: 'underfunded', label: 'Underfunded' },
+          { key: 'available', label: 'Money available' },
+        ] as const)"
+        :key="option.key"
+        class="rounded-full border px-3 py-1 text-sm"
+        :class="filter === option.key
+          ? 'border-accent-400 bg-accent-400/10 font-medium text-accent-300'
+          : 'border-ink-600 text-mist-200 hover:bg-ink-700'"
+        @click="filter = option.key"
+      >
+        {{ option.label }}
+      </button>
+    </div>
+
     <p v-if="error" class="mb-4 rounded-md bg-red-500/15 px-4 py-2 text-sm text-red-300">{{ error }}</p>
 
     <p
@@ -153,7 +200,9 @@ async function assignAllUnderfunded() {
       isn't covered by envelopes — it will become card debt unless you assign money to those categories.
     </p>
 
-    <div v-if="store.month" class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
+    <CategoryManager v-if="editMode" />
+
+    <div v-else-if="store.month" class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
@@ -165,9 +214,13 @@ async function assignAllUnderfunded() {
           </tr>
         </thead>
         <tbody>
-          <template v-for="group in store.month.groups" :key="group.uuid">
-            <tr class="border-b border-paper-300 bg-paper-100">
-              <td colspan="5" class="px-4 py-2 font-semibold text-ink-700">{{ group.name }}</td>
+          <template v-for="group in visibleGroups" :key="group.uuid">
+            <tr class="border-b border-paper-300 bg-paper-100 font-semibold text-ink-700">
+              <td class="px-4 py-2">{{ group.name }}</td>
+              <td class="px-4 py-2 text-right">{{ formatMoney(groupTotal(group, 'assigned'), store.current?.currency) }}</td>
+              <td class="px-4 py-2 text-right">{{ formatMoney(groupTotal(group, 'activity'), store.current?.currency) }}</td>
+              <td class="px-4 py-2 text-right">{{ formatMoney(groupTotal(group, 'available'), store.current?.currency) }}</td>
+              <td />
             </tr>
             <tr
               v-for="category in group.categories"

@@ -40,6 +40,56 @@ test('a payee default category auto-categorises new transactions', function () {
     ])->assertCreated()->assertJsonPath('data.category', null);
 });
 
+test('payees remember their last category and flow direction', function () {
+    [$budget, $account] = payeeSetup($this);
+    $groceries = $budget->categories()->where('name', 'Groceries')->first();
+    $fun = $budget->categories()->where('name', 'Fun Money')->first();
+    $rta = $budget->readyToAssignCategory();
+
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+        'account_id' => $account['uuid'], 'date' => '2026-07-01', 'amount' => -4000,
+        'payee_name' => 'Aldi', 'category_id' => $groceries->uuid,
+    ]);
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+        'account_id' => $account['uuid'], 'date' => '2026-07-02', 'amount' => 250000,
+        'payee_name' => 'Employer', 'category_id' => $rta->uuid,
+    ]);
+
+    $payees = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'));
+
+    expect($payees->firstWhere('name', 'Aldi'))->toMatchArray([
+        'last_category_uuid' => $groceries->uuid, 'last_flow' => 'outflow',
+    ])->and($payees->firstWhere('name', 'Employer'))->toMatchArray([
+        'last_category_uuid' => $rta->uuid, 'last_flow' => 'inflow',
+    ]);
+
+    // Memory follows the most recent transaction.
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+        'account_id' => $account['uuid'], 'date' => '2026-07-05', 'amount' => -1500,
+        'payee_name' => 'Aldi', 'category_id' => $fun->uuid,
+    ]);
+
+    $payees = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'));
+    expect($payees->firstWhere('name', 'Aldi')['last_category_uuid'])->toBe($fun->uuid);
+});
+
+test('transactions can be filtered by payee', function () {
+    [$budget, $account] = payeeSetup($this);
+
+    foreach ([['Aldi', -100], ['Aldi', -200], ['Coles', -300]] as [$name, $amount]) {
+        $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+            'account_id' => $account['uuid'], 'date' => '2026-07-01', 'amount' => $amount,
+            'payee_name' => $name,
+        ]);
+    }
+
+    $aldi = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'))
+        ->firstWhere('name', 'Aldi');
+
+    $rows = $this->getJson("/api/v1/budgets/{$budget->uuid}/transactions?payee_id={$aldi['uuid']}")->json('data');
+    expect($rows)->toHaveCount(2);
+});
+
 test('merging payees moves transactions and removes the source', function () {
     [$budget, $account] = payeeSetup($this);
 

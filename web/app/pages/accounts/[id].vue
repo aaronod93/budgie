@@ -26,11 +26,24 @@ interface Scheduled {
   transfer_account_uuid: string | null
 }
 
+interface PayeeOption {
+  uuid: string
+  name: string
+  transfer_account_uuid: string | null
+  default_category: { uuid: string, name: string } | null
+  last_category_uuid: string | null
+  last_flow: 'outflow' | 'inflow' | null
+}
+
 const route = useRoute()
 const store = useBudgetStore()
 
 const transactions = ref<Txn[]>([])
 const schedules = ref<Scheduled[]>([])
+const payees = ref<PayeeOption[]>([])
+const payeeDropdownOpen = ref(false)
+const outflowInput = ref<HTMLInputElement | null>(null)
+const inflowInput = ref<HTMLInputElement | null>(null)
 const loadingRows = ref(false)
 const error = ref('')
 const editingUuid = ref<string | null>(null)
@@ -39,6 +52,9 @@ const statementBalance = ref('')
 const reconcileMessage = ref('')
 const search = ref('')
 const showImport = ref(false)
+const showDeleteAccount = ref(false)
+const deleteConfirmText = ref('')
+const deleteBusy = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const blankForm = () => ({
@@ -74,15 +90,65 @@ async function load() {
   try {
     const query = new URLSearchParams({ account_id: accountUuid.value })
     if (search.value.trim()) query.set('search', search.value.trim())
-    const [txns, scheds] = await Promise.all([
+    const [txns, scheds, payeeList] = await Promise.all([
       apiFetch<{ data: Txn[] }>(`${store.base}/transactions?${query}`),
       apiFetch<{ data: Scheduled[] }>(`${store.base}/scheduled-transactions?account_id=${accountUuid.value}`),
+      apiFetch<{ data: PayeeOption[] }>(`${store.base}/payees`),
+      store.month ? Promise.resolve() : store.loadMonth().catch(() => {}),
     ])
     transactions.value = txns.data
     schedules.value = scheds.data
+    payees.value = payeeList.data
   } finally {
     loadingRows.value = false
   }
+}
+
+// --- Payee memory: pick a payee, get its last category + usual flow ---
+
+const payeeSuggestions = computed(() => {
+  const query = form.payee.trim().toLowerCase()
+  return payees.value
+    .filter(p => !p.transfer_account_uuid)
+    .filter(p => !query || p.name.toLowerCase().includes(query))
+    .slice(0, 8)
+})
+
+function selectPayee(payee: PayeeOption) {
+  form.payee = payee.name
+  payeeDropdownOpen.value = false
+  if (editingUuid.value) return
+
+  // Pre-select the last-used category (falling back to the payee default).
+  const categoryUuid = payee.last_category_uuid ?? payee.default_category?.uuid ?? null
+  if (categoryUuid) {
+    if (categoryUuid === store.current?.ready_to_assign_category_uuid) {
+      form.category = 'rta'
+    } else if (store.groups.some(g => g.categories.some(c => c.uuid === categoryUuid))) {
+      form.category = categoryUuid
+    }
+  }
+
+  // Pre-focus the side this payee usually is (outflow vs inflow).
+  nextTick(() => {
+    (payee.last_flow === 'inflow' ? inflowInput.value : outflowInput.value)?.focus()
+  })
+}
+
+// Available balance shown beside each category in the picker.
+const availableByUuid = computed(() => {
+  const map = new Map<string, number>()
+  for (const group of store.month?.groups ?? []) {
+    for (const category of group.categories) map.set(category.uuid, category.available)
+  }
+  return map
+})
+
+function categoryLabel(name: string, uuid: string): string {
+  const available = availableByUuid.value.get(uuid)
+  return available === undefined
+    ? name
+    : `${name}  (${formatMoney(available, store.current?.currency)})`
 }
 
 async function approveAll() {
@@ -207,6 +273,23 @@ async function toggleCleared(txn: Txn) {
   await store.loadAccounts()
 }
 
+async function deleteAccount() {
+  if (deleteConfirmText.value !== 'CONFIRMDELETE') return
+  deleteBusy.value = true
+  error.value = ''
+  try {
+    await apiFetch(`${store.base}/accounts/${accountUuid.value}`, { method: 'DELETE' })
+    await Promise.all([store.loadAccounts(), store.loadMonth()])
+    await navigateTo('/budget')
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not delete the account.'
+    showDeleteAccount.value = false
+  } finally {
+    deleteBusy.value = false
+  }
+}
+
 async function remove(txn: Txn) {
   if (!confirm('Delete this transaction?')) return
   await apiFetch(`${store.base}/transactions/${txn.uuid}`, { method: 'DELETE' })
@@ -223,13 +306,25 @@ async function remove(txn: Txn) {
         <p class="text-sm text-mist-300 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
       </div>
       <div class="flex items-center gap-4">
-        <div class="text-right">
-          <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-400' : 'text-paper-100'">
-            {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
-          </p>
-          <p class="text-xs text-mist-500">
-            Cleared: {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}
-          </p>
+        <div class="flex items-center gap-3 text-right">
+          <div>
+            <p class="font-semibold text-mist-200">{{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}</p>
+            <p class="text-xs text-mist-500">Cleared</p>
+          </div>
+          <span class="text-mist-500">+</span>
+          <div>
+            <p class="font-semibold text-mist-200">
+              {{ formatMoney((account?.balance ?? 0) - (account?.cleared_balance ?? 0), store.current?.currency) }}
+            </p>
+            <p class="text-xs text-mist-500">Uncleared</p>
+          </div>
+          <span class="text-mist-500">=</span>
+          <div>
+            <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-400' : 'text-paper-100'">
+              {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
+            </p>
+            <p class="text-xs text-mist-500">Working balance</p>
+          </div>
         </div>
         <button
           class="rounded-md border border-ink-600 text-mist-200 px-3 py-1.5 text-sm hover:bg-ink-700"
@@ -242,6 +337,12 @@ async function remove(txn: Txn) {
           @click="showReconcile = true; statementBalance = centsToInput(account?.cleared_balance ?? 0)"
         >
           Reconcile
+        </button>
+        <button
+          class="rounded-md border border-red-500/50 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10"
+          @click="showDeleteAccount = true; deleteConfirmText = ''"
+        >
+          Delete account
         </button>
       </div>
     </header>
@@ -271,12 +372,34 @@ async function remove(txn: Txn) {
       @submit.prevent="submit"
     >
       <input v-model="form.date" type="date" required class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
-      <input
-        v-model="form.payee"
-        placeholder="Payee"
-        :disabled="editingTransfer"
-        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
-      >
+      <div class="relative">
+        <input
+          v-model="form.payee"
+          placeholder="Payee"
+          :disabled="editingTransfer"
+          autocomplete="off"
+          class="w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
+          @focus="payeeDropdownOpen = true"
+          @input="payeeDropdownOpen = true"
+          @blur="payeeDropdownOpen = false"
+          @keydown.esc="payeeDropdownOpen = false"
+        >
+        <div
+          v-if="payeeDropdownOpen && payeeSuggestions.length"
+          class="absolute left-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-md border border-paper-400 bg-paper-50 shadow-lg"
+        >
+          <p class="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wide text-mist-700">Saved payees</p>
+          <button
+            v-for="payee in payeeSuggestions"
+            :key="payee.uuid"
+            type="button"
+            class="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-100"
+            @mousedown.prevent="selectPayee(payee)"
+          >
+            {{ payee.name }}
+          </button>
+        </div>
+      </div>
       <select
         v-model="form.category"
         :disabled="editingTransfer"
@@ -285,8 +408,12 @@ async function remove(txn: Txn) {
         <option value="none">No category</option>
         <option value="rta">Inflow: Ready to Assign</option>
         <optgroup v-for="group in store.groups" :key="group.uuid" :label="group.name">
-          <option v-for="category in group.categories" :key="category.uuid" :value="category.uuid">
-            {{ category.name }}
+          <option
+            v-for="category in group.categories.filter(c => !c.hidden)"
+            :key="category.uuid"
+            :value="category.uuid"
+          >
+            {{ categoryLabel(category.name, category.uuid) }}
           </option>
         </optgroup>
         <optgroup v-if="!editingUuid && otherAccounts.length" label="Transfer to…">
@@ -296,8 +423,8 @@ async function remove(txn: Txn) {
         </optgroup>
       </select>
       <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
-      <input v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
-      <input v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
+      <input ref="outflowInput" v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
+      <input ref="inflowInput" v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
       <select
         v-if="!editingUuid"
         v-model="form.repeat"
@@ -420,6 +547,41 @@ async function remove(txn: Txn) {
       @close="showImport = false"
       @done="load(); store.loadAccounts()"
     />
+
+    <!-- Delete account modal (type-to-confirm) -->
+    <div v-if="showDeleteAccount" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+        <h2 class="mb-1 text-lg font-semibold text-red-700">Delete {{ account?.name }}?</h2>
+        <p class="mb-2 text-sm text-mist-700">
+          This permanently deletes the account and <strong>all {{ transactions.length }} of its
+          transactions</strong>, plus any schedules on it. Envelope balances will recalculate
+          as if this account's activity never happened. This cannot be undone.
+        </p>
+        <p class="mb-4 text-sm text-mist-700">
+          Type <strong class="font-mono text-ink-800">CONFIRMDELETE</strong> to confirm.
+        </p>
+        <form class="space-y-4" @submit.prevent="deleteAccount">
+          <input
+            v-model="deleteConfirmText"
+            placeholder="CONFIRMDELETE"
+            autocomplete="off"
+            class="w-full rounded-md border border-red-400 bg-paper-50 px-3 py-2 font-mono"
+          >
+          <div class="flex justify-end gap-2">
+            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showDeleteAccount = false">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="deleteConfirmText !== 'CONFIRMDELETE' || deleteBusy"
+              class="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {{ deleteBusy ? 'Deleting…' : 'Delete forever' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Reconcile modal -->
     <div v-if="showReconcile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

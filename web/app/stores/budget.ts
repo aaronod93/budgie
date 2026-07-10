@@ -28,11 +28,13 @@ export interface Account {
 export interface CategoryRef {
   uuid: string
   name: string
+  hidden: boolean
 }
 
 export interface CategoryGroupFull {
   uuid: string
   name: string
+  hidden: boolean
   categories: CategoryRef[]
 }
 
@@ -175,6 +177,55 @@ export const useBudgetStore = defineStore('budget', () => {
     await loadMonth()
   }
 
+  // --- Category management (groups + categories) ---
+
+  async function createGroup(name: string): Promise<void> {
+    await apiFetch(`${base.value}/category-groups`, { method: 'POST', body: { name } })
+    await loadGroups()
+  }
+
+  async function updateGroup(uuid: string, body: { name?: string, hidden?: boolean }): Promise<void> {
+    await apiFetch(`${base.value}/category-groups/${uuid}`, { method: 'PATCH', body })
+    await loadGroups()
+  }
+
+  async function deleteGroup(uuid: string): Promise<void> {
+    await apiFetch(`${base.value}/category-groups/${uuid}`, { method: 'DELETE' })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
+  async function reorderGroups(order: string[]): Promise<void> {
+    await apiFetch(`${base.value}/category-groups-reorder`, { method: 'POST', body: { order } })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
+  async function createCategory(groupUuid: string, name: string): Promise<void> {
+    await apiFetch(`${base.value}/categories`, { method: 'POST', body: { name, group_id: groupUuid } })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
+  async function updateCategory(
+    uuid: string,
+    body: { name?: string, hidden?: boolean, group_id?: string },
+  ): Promise<void> {
+    await apiFetch(`${base.value}/categories/${uuid}`, { method: 'PATCH', body })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
+  async function deleteCategory(uuid: string, migrateTo?: string): Promise<void> {
+    const query = migrateTo ? `?migrate_to=${migrateTo}` : ''
+    await apiFetch(`${base.value}/categories/${uuid}${query}`, { method: 'DELETE' })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
+  async function reorderCategories(groupUuid: string, order: string[]): Promise<void> {
+    await apiFetch(`${base.value}/categories-reorder`, {
+      method: 'POST',
+      body: { group_id: groupUuid, order },
+    })
+    await Promise.all([loadGroups(), loadMonth()])
+  }
+
   async function loadInvitations(): Promise<void> {
     invitations.value = (await apiFetch<{ data: PendingInvitation[] }>('/api/v1/invitations')).data
   }
@@ -206,6 +257,8 @@ export const useBudgetStore = defineStore('budget', () => {
     invitations, liveMessage,
     init, selectBudget, createBudget, loadAccounts, loadGroups, addAccount,
     loadMonth, shiftMonth, assign, moveMoney, assignUnderfunded, setTarget, removeTarget,
+    createGroup, updateGroup, deleteGroup, reorderGroups,
+    createCategory, updateCategory, deleteCategory, reorderCategories,
     loadInvitations, acceptInvitation, declineInvitation, refreshFromLive,
   }
 })

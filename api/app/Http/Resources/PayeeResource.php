@@ -17,6 +17,10 @@ class PayeeResource extends JsonResource
                 'uuid' => $this->defaultCategory->uuid,
                 'name' => $this->defaultCategory->name,
             ] : null),
+            // Payee memory (set by PayeeController::index): last-used category
+            // and usual direction, for register pre-fill.
+            'last_category_uuid' => $this->last_category_uuid ?? null,
+            'last_flow' => $this->last_flow ?? null,
         ];
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Budget;
 use App\Services\CreateAccount;
 use App\Services\RecordActivity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class AccountController extends Controller
@@ -73,16 +74,44 @@ class AccountController extends Controller
         return new AccountResource($this->fresh($budget, $account));
     }
 
-    public function destroy(Budget $budget, Account $account)
+    /**
+     * Deleting an account removes it and everything attached to it: its
+     * transactions (mirrored transfer rows on other accounts survive — that
+     * money genuinely moved), its schedules, its transfer payee, and a credit
+     * card's linked payment category. The client confirms before calling.
+     */
+    public function destroy(Request $request, Budget $budget, Account $account)
     {
         Gate::authorize('update', $budget);
 
-        $account->transactions()->delete();
-        $budget->categories()
-            ->where('internal_type', 'credit_card_payment')
-            ->where('linked_account_id', $account->id)
-            ->delete();
-        $account->delete();
+        $transactionCount = $account->transactions()->count();
+
+        DB::transaction(function () use ($budget, $account): void {
+            $account->transactions()->delete();
+
+            $budget->scheduledTransactions()
+                ->where(fn ($q) => $q
+                    ->where('account_id', $account->id)
+                    ->orWhere('transfer_account_id', $account->id))
+                ->delete();
+
+            $budget->payees()->where('transfer_account_id', $account->id)->delete();
+
+            $budget->categories()
+                ->where('internal_type', 'credit_card_payment')
+                ->where('linked_account_id', $account->id)
+                ->delete();
+
+            $account->delete();
+        });
+
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'account.deleted',
+            "Deleted account {$account->name} and its $transactionCount transaction(s)",
+            $account->uuid,
+        );
 
         return response()->noContent();
     }

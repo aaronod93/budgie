@@ -25,6 +25,7 @@ class TransactionController extends Controller
         $filters = $request->validate([
             'account_id' => ['sometimes', 'uuid'],
             'category_id' => ['sometimes', 'uuid'],
+            'payee_id' => ['sometimes', 'uuid'],
             'since' => ['sometimes', 'date'],
             'until' => ['sometimes', 'date'],
             'search' => ['sometimes', 'string', 'max:100'],
@@ -42,6 +43,9 @@ class TransactionController extends Controller
         }
         if (isset($filters['category_id'])) {
             $query->where('category_id', $this->categoryId($budget, $filters['category_id']));
+        }
+        if (isset($filters['payee_id'])) {
+            $query->where('payee_id', $this->payeeId($budget, $filters['payee_id']));
         }
         if (isset($filters['since'])) {
             $query->where('date', '>=', $filters['since']);

@@ -41,7 +41,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::prefix('budgets/{budget}')->scopeBindings()->group(function () {
             Route::apiResource('accounts', AccountController::class);
+            Route::post('category-groups-reorder', [CategoryGroupController::class, 'reorder']);
             Route::apiResource('category-groups', CategoryGroupController::class)->except('show');
+            Route::post('categories-reorder', [CategoryController::class, 'reorder']);
             Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
             Route::apiResource('payees', PayeeController::class)->only(['index', 'update']);
             Route::apiResource('transactions', TransactionController::class);

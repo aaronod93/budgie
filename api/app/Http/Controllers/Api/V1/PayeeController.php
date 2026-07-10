@@ -20,9 +20,27 @@ class PayeeController extends Controller
     {
         Gate::authorize('view', $budget);
 
-        return PayeeResource::collection(
-            $budget->payees()->with(['transferAccount', 'defaultCategory'])->orderBy('name')->get(),
-        );
+        $payees = $budget->payees()->with(['transferAccount', 'defaultCategory'])->orderBy('name')->get();
+
+        // Payee memory: each payee's most recent transaction tells the client
+        // which category to pre-select and whether to focus outflow or inflow.
+        $latest = Transaction::query()
+            ->whereIn('id', Transaction::query()
+                ->selectRaw('MAX(id)')
+                ->where('budget_id', $budget->id)
+                ->whereNotNull('payee_id')
+                ->groupBy('payee_id'))
+            ->with('category:id,uuid')
+            ->get(['id', 'payee_id', 'category_id', 'amount'])
+            ->keyBy('payee_id');
+
+        foreach ($payees as $payee) {
+            $last = $latest->get($payee->id);
+            $payee->last_category_uuid = $last?->category?->uuid;
+            $payee->last_flow = $last === null ? null : ($last->amount < 0 ? 'outflow' : 'inflow');
+        }
+
+        return PayeeResource::collection($payees);
     }
 
     public function update(Request $request, Budget $budget, Payee $payee)
