@@ -5,6 +5,7 @@ import '../auth.dart';
 import '../models.dart';
 import '../money.dart';
 import '../providers.dart';
+import '../theme.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key, required this.account});
@@ -61,8 +62,8 @@ class RegisterScreen extends ConsumerWidget {
                                 : Icons.radio_button_unchecked,
                         size: 18,
                         color: txn.cleared == 'uncleared'
-                            ? Colors.grey.shade400
-                            : Colors.green.shade700,
+                            ? BudgieColors.mist.withValues(alpha: 0.5)
+                            : BudgieColors.moneyPositive,
                       ),
                       title: Text(txn.payeeName ?? '—'),
                       subtitle: Text('${txn.date} · ${txn.categoryLabel}'),
@@ -71,8 +72,8 @@ class RegisterScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: txn.amount < 0
-                              ? Colors.grey.shade900
-                              : Colors.green.shade800,
+                              ? BudgieColors.paper
+                              : BudgieColors.moneyPositive,
                         ),
                       ),
                     );

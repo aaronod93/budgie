@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth.dart';
+import '../theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -68,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 Text("Lil' Budgie",
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+                        color: BudgieColors.accent, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text('Sign in to your budget',
                     style: Theme.of(context).textTheme.bodyMedium),
@@ -109,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                  Text(_error!, style: TextStyle(color: BudgieColors.moneyNegative)),
                 ],
                 const SizedBox(height: 16),
                 FilledButton(

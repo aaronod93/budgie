@@ -72,43 +72,43 @@ async function run(action: () => Promise<unknown>) {
 <template>
   <div class="mx-auto max-w-3xl p-6">
     <h1 class="mb-1 text-xl font-bold">Payees</h1>
-    <p class="mb-6 text-sm text-slate-500">
+    <p class="mb-6 text-sm text-mist-300">
       Set a default category to auto-categorise future transactions; merge duplicates to tidy history.
     </p>
 
-    <p v-if="error" class="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+    <p v-if="error" class="mb-4 rounded-md bg-red-500/15 px-4 py-2 text-sm text-red-300">{{ error }}</p>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400">
+          <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
             <th class="px-4 py-3">Payee</th>
             <th class="w-64 px-4 py-3">Default category</th>
             <th class="w-20 px-4 py-3" />
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="3" class="px-4 py-6 text-center text-slate-400">Loading…</td></tr>
-          <tr v-else-if="regular.length === 0"><td colspan="3" class="px-4 py-6 text-center text-slate-400">No payees yet.</td></tr>
-          <tr v-for="payee in regular" :key="payee.uuid" class="border-b border-slate-100 hover:bg-slate-50">
+          <tr v-if="loading"><td colspan="3" class="px-4 py-6 text-center text-mist-700">Loading…</td></tr>
+          <tr v-else-if="regular.length === 0"><td colspan="3" class="px-4 py-6 text-center text-mist-700">No payees yet.</td></tr>
+          <tr v-for="payee in regular" :key="payee.uuid" class="border-b border-paper-300 hover:bg-paper-100">
             <td class="px-4 py-2">
               <input
                 v-if="renaming === payee.uuid"
                 v-model="renameValue"
-                class="rounded border border-emerald-400 px-2 py-0.5"
+                class="rounded border border-accent-400 bg-paper-50 px-2 py-0.5"
                 autofocus
                 @keydown.enter.prevent="rename(payee)"
                 @keydown.esc="renaming = null"
                 @blur="rename(payee)"
               >
-              <button v-else class="rounded px-1 py-0.5 hover:bg-emerald-50" @click="renaming = payee.uuid; renameValue = payee.name">
+              <button v-else class="rounded px-1 py-0.5 hover:bg-paper-100 hover:text-accent-600" @click="renaming = payee.uuid; renameValue = payee.name">
                 {{ payee.name }}
               </button>
             </td>
             <td class="px-4 py-2">
               <select
                 :value="payee.default_category?.uuid ?? 'none'"
-                class="w-full rounded-md border border-slate-200 px-2 py-1 text-sm"
+                class="w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1 text-sm"
                 @change="setDefaultCategory(payee, ($event.target as HTMLSelectElement).value)"
               >
                 <option value="none">—</option>
@@ -121,7 +121,7 @@ async function run(action: () => Promise<unknown>) {
             </td>
             <td class="px-4 py-2 text-right">
               <button
-                class="text-xs text-slate-400 hover:text-emerald-700 hover:underline"
+                class="text-xs text-mist-700 hover:text-accent-600 hover:underline"
                 @click="merging = payee; mergeInto = ''"
               >
                 Merge…
@@ -134,13 +134,13 @@ async function run(action: () => Promise<unknown>) {
 
     <!-- Merge modal -->
     <div v-if="merging" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Merge "{{ merging.name }}"</h2>
-        <p class="mb-4 text-sm text-slate-500">
+        <p class="mb-4 text-sm text-mist-700">
           All of its transactions move to the payee you choose, and "{{ merging.name }}" is removed.
         </p>
         <form class="space-y-4" @submit.prevent="submitMerge">
-          <select v-model="mergeInto" required class="w-full rounded-md border border-slate-300 px-3 py-2">
+          <select v-model="mergeInto" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
             <option value="" disabled>Merge into…</option>
             <option
               v-for="payee in regular.filter(p => p.uuid !== merging?.uuid)"
@@ -151,8 +151,8 @@ async function run(action: () => Promise<unknown>) {
             </option>
           </select>
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-slate-600 hover:bg-slate-100" @click="merging = null">Cancel</button>
-            <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Merge</button>
+            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="merging = null">Cancel</button>
+            <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Merge</button>
           </div>
         </form>
       </div>

@@ -1,1 +1,40 @@
 @import "tailwindcss";
+@import "@fontsource-variable/work-sans";
+
+/*
+ * Lil' Budgie theme: dark blue-gray shell, off-white "envelope" cards,
+ * orange accent, muted teal secondary. Green/red are reserved for money
+ * semantics (positive/negative), never for chrome.
+ */
+@theme {
+  --font-sans: "Work Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Shell (dark blue-gray) */
+  --color-ink-950: #10141d;
+  --color-ink-900: #131722;
+  --color-ink-800: #191e2a; /* header & background */
+  --color-ink-700: #232a3a;
+  --color-ink-600: #2e374c;
+  --color-ink-500: #3b465f;
+
+  /* Envelope cards (off-white) */
+  --color-paper-50: #f4f3f0;  /* inputs / raised surfaces on a card */
+  --color-paper-100: #eeede9;
+  --color-paper-200: #e7e6e2; /* card background */
+  --color-paper-300: #d8d6cf;
+  --color-paper-400: #b9b6ac; /* hairlines on cards */
+
+  /* Accent (orange) */
+  --color-accent-100: #f8e3d4;
+  --color-accent-300: #eda87c;
+  --color-accent-400: #e3854e; /* active tab / buttons */
+  --color-accent-500: #d06f36;
+  --color-accent-600: #b95a25;
+  --color-accent-700: #96481d;
+
+  /* Secondary (teal / blue-gray) */
+  --color-mist-200: #c4d7e1;
+  --color-mist-300: #a3c0d0; /* inactive tabs, secondary text on dark */
+  --color-mist-500: #6f93a8;
+  --color-mist-700: #4c6b7e;
+}

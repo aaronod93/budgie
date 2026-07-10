@@ -5,6 +5,7 @@ import '../auth.dart';
 import '../models.dart';
 import '../money.dart';
 import '../providers.dart';
+import '../theme.dart';
 
 class BudgetScreen extends ConsumerWidget {
   const BudgetScreen({super.key});
@@ -57,12 +58,12 @@ class BudgetScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Card(
-                      color: Colors.amber.shade50,
+                      color: Colors.amber.withValues(alpha: 0.12),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
                           '${formatMoney(payload.creditOverspend, currency: budget.currency)} of card spending is unfunded and will become debt.',
-                          style: TextStyle(color: Colors.amber.shade900),
+                          style: TextStyle(color: Colors.amber.shade200),
                         ),
                       ),
                     ),
@@ -72,7 +73,7 @@ class BudgetScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(group.name.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.grey.shade600, letterSpacing: 1.2)),
+                            color: BudgieColors.mist, letterSpacing: 1.2)),
                   ),
                   for (final category in group.categories)
                     _CategoryTile(
@@ -107,7 +108,7 @@ class _RtaCard extends StatelessWidget {
     final positive = payload.readyToAssign >= 0;
     return Card(
       margin: const EdgeInsets.all(16),
-      color: positive ? Colors.green.shade700 : Colors.red.shade700,
+      color: positive ? BudgieColors.accent : Colors.red.shade700,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -116,8 +117,8 @@ class _RtaCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
-                    ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-            const Text('Ready to Assign', style: TextStyle(color: Colors.white70)),
+                    ?.copyWith(color: positive ? BudgieColors.inkDeep : Colors.white, fontWeight: FontWeight.bold)),
+            Text('Ready to Assign', style: TextStyle(color: positive ? BudgieColors.inkDeep.withValues(alpha: 0.7) : Colors.white70)),
           ],
         ),
       ),
@@ -140,10 +141,10 @@ class _CategoryTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final available = category.available;
     final color = available > 0
-        ? Colors.green.shade700
+        ? BudgieColors.moneyPositive
         : available < 0
-            ? Colors.red.shade700
-            : Colors.grey.shade600;
+            ? BudgieColors.moneyNegative
+            : BudgieColors.mist;
 
     return ListTile(
       dense: true,

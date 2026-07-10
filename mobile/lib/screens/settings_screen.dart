@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth.dart';
 import '../providers.dart';
+import '../theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -61,8 +62,8 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           ListTile(
-            leading: Icon(Icons.logout, color: Colors.red.shade700),
-            title: Text('Sign out', style: TextStyle(color: Colors.red.shade700)),
+            leading: Icon(Icons.logout, color: BudgieColors.moneyNegative),
+            title: Text('Sign out', style: TextStyle(color: BudgieColors.moneyNegative)),
             onTap: () => ref.read(authProvider.notifier).logout(),
           ),
         ],

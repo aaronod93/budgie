@@ -1,10 +1,10 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth', layout: 'app' })
 
-// Chart palette validated with the dataviz six-checks script on the white card
-// surface: emerald #047857 + blue #2a78d6 (worst adjacent CVD dE 66.7, >=3:1).
-const SERIES_1 = '#047857'
-const SERIES_2 = '#2a78d6'
+// Chart palette validated with the dataviz six-checks script on the paper card
+// surface #E7E6E2: burnt orange #B95A25 + teal #1E739E (worst CVD dE 69.0, >=3:1).
+const SERIES_1 = '#B95A25'
+const SERIES_2 = '#1E739E'
 
 interface SpendingReport {
   total: number
@@ -89,8 +89,8 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
           :key="months"
           class="rounded-md border px-3 py-1.5 text-sm"
           :class="rangeMonths === months
-            ? 'border-emerald-600 bg-emerald-50 font-medium text-emerald-800'
-            : 'border-slate-300 hover:bg-white'"
+            ? 'border-accent-400 bg-accent-400/10 font-medium text-accent-300'
+            : 'border-ink-600 text-mist-200 hover:bg-ink-700'"
           @click="rangeMonths = months"
         >
           {{ months }} months
@@ -98,47 +98,47 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
       </div>
     </header>
 
-    <div v-if="loading && !spending" class="py-20 text-center text-slate-400">Loading…</div>
+    <div v-if="loading && !spending" class="py-20 text-center text-mist-300">Loading…</div>
 
     <template v-else-if="spending">
       <!-- KPI row -->
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
-          <p class="text-3xl font-bold text-slate-900">
+        <div class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
+          <p class="text-3xl font-bold text-ink-800">
             {{ ageOfMoney === null ? '—' : `${ageOfMoney} days` }}
           </p>
-          <p class="mt-1 text-sm text-slate-500">Age of Money (aim for 30+)</p>
+          <p class="mt-1 text-sm text-mist-700">Age of Money (aim for 30+)</p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
-          <p class="text-3xl font-bold text-slate-900">{{ formatMoney(spending.total, store.current?.currency) }}</p>
-          <p class="mt-1 text-sm text-slate-500">Spending, last {{ rangeMonths }} months</p>
+        <div class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
+          <p class="text-3xl font-bold text-ink-800">{{ formatMoney(spending.total, store.current?.currency) }}</p>
+          <p class="mt-1 text-sm text-mist-700">Spending, last {{ rangeMonths }} months</p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-5">
-          <p class="text-3xl font-bold" :class="currentNet < 0 ? 'text-red-700' : 'text-slate-900'">
+        <div class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
+          <p class="text-3xl font-bold" :class="currentNet < 0 ? 'text-red-700' : 'text-ink-800'">
             {{ formatMoney(currentNet, store.current?.currency) }}
           </p>
-          <p class="mt-1 text-sm text-slate-500">Net worth today</p>
+          <p class="mt-1 text-sm text-mist-700">Net worth today</p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Spending by category/payee: sorted horizontal bars -->
-        <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <section class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="font-semibold">Spending by {{ groupBy }}</h2>
-            <select v-model="groupBy" class="rounded-md border border-slate-300 px-2 py-1 text-sm">
+            <select v-model="groupBy" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1 text-sm">
               <option value="category">Category</option>
               <option value="payee">Payee</option>
             </select>
           </div>
-          <p v-if="topSpending.length === 0" class="py-8 text-center text-sm text-slate-400">No spending in this range.</p>
+          <p v-if="topSpending.length === 0" class="py-8 text-center text-sm text-mist-700">No spending in this range.</p>
           <div v-else class="space-y-2.5">
             <div v-for="group in topSpending" :key="group.name">
               <div class="mb-0.5 flex justify-between text-sm">
-                <span class="text-slate-700">{{ group.name }}</span>
-                <span class="font-medium text-slate-900">{{ formatMoney(group.amount, store.current?.currency) }}</span>
+                <span class="text-ink-700">{{ group.name }}</span>
+                <span class="font-medium text-ink-800">{{ formatMoney(group.amount, store.current?.currency) }}</span>
               </div>
-              <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-2.5 overflow-hidden rounded-full bg-paper-50">
                 <div
                   class="h-full rounded-full"
                   :style="{ width: `${(group.amount / maxSpending) * 100}%`, background: SERIES_1 }"
@@ -149,7 +149,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Monthly spending trend -->
-        <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <section class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Monthly spending</h2>
           <ChartsColumnChart
             :labels="spending.monthly.map(m => monthLabel(m.month))"
@@ -159,7 +159,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Income vs expense -->
-        <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <section class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Income vs expense</h2>
           <ChartsColumnChart
             v-if="incomeExpense"
@@ -173,9 +173,9 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Net worth -->
-        <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <section class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Net worth</h2>
-          <p v-if="netWorthWindow.length === 0" class="py-8 text-center text-sm text-slate-400">No data yet.</p>
+          <p v-if="netWorthWindow.length === 0" class="py-8 text-center text-sm text-mist-700">No data yet.</p>
           <ChartsLineChart
             v-else
             :labels="netWorthWindow.map(m => monthLabel(m.month))"
@@ -184,10 +184,10 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
             :currency="store.current?.currency"
           />
           <details v-if="netWorthWindow.length" class="mt-3">
-            <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-600">View data</summary>
+            <summary class="cursor-pointer text-xs text-mist-700 hover:text-ink-700">View data</summary>
             <table class="mt-2 w-full text-xs">
               <thead>
-                <tr class="text-left text-slate-400">
+                <tr class="text-left text-mist-700">
                   <th class="py-1 pr-2 font-normal">Month</th>
                   <th class="py-1 pr-2 text-right font-normal">Assets</th>
                   <th class="py-1 pr-2 text-right font-normal">Debts</th>
@@ -195,8 +195,8 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="m in netWorthWindow" :key="m.month" class="border-t border-slate-100">
-                  <td class="py-1 pr-2 text-slate-600">{{ m.month }}</td>
+                <tr v-for="m in netWorthWindow" :key="m.month" class="border-t border-paper-300">
+                  <td class="py-1 pr-2 text-ink-700">{{ m.month }}</td>
                   <td class="py-1 pr-2 text-right">{{ formatMoney(m.assets, store.current?.currency) }}</td>
                   <td class="py-1 pr-2 text-right">{{ formatMoney(m.debts, store.current?.currency) }}</td>
                   <td class="py-1 text-right font-medium">{{ formatMoney(m.net, store.current?.currency) }}</td>

@@ -5,6 +5,7 @@ import '../auth.dart';
 import '../models.dart';
 import '../money.dart';
 import '../providers.dart';
+import '../theme.dart';
 import 'register_screen.dart';
 
 class AccountsScreen extends ConsumerWidget {
@@ -57,7 +58,7 @@ class AccountsScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Text(title.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.grey.shade600, letterSpacing: 1.2)),
+                  color: BudgieColors.mist, letterSpacing: 1.2)),
         ),
         for (final account in accounts)
           ListTile(
@@ -68,8 +69,8 @@ class AccountsScreen extends ConsumerWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: account.balance < 0
-                    ? Colors.red.shade700
-                    : Colors.green.shade800,
+                    ? BudgieColors.moneyNegative
+                    : BudgieColors.moneyPositive,
               ),
             ),
             onTap: () => Navigator.of(context).push(

@@ -220,25 +220,25 @@ async function remove(txn: Txn) {
     <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 class="text-xl font-bold">{{ account?.name ?? 'Account' }}</h1>
-        <p class="text-sm text-slate-500 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
+        <p class="text-sm text-mist-300 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
       </div>
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-600' : 'text-emerald-700'">
+          <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-400' : 'text-paper-100'">
             {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
           </p>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-mist-500">
             Cleared: {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}
           </p>
         </div>
         <button
-          class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-white"
+          class="rounded-md border border-ink-600 text-mist-200 px-3 py-1.5 text-sm hover:bg-ink-700"
           @click="showImport = true"
         >
           Import
         </button>
         <button
-          class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-white"
+          class="rounded-md border border-ink-600 text-mist-200 px-3 py-1.5 text-sm hover:bg-ink-700"
           @click="showReconcile = true; statementBalance = centsToInput(account?.cleared_balance ?? 0)"
         >
           Reconcile
@@ -250,37 +250,37 @@ async function remove(txn: Txn) {
       <input
         v-model="search"
         placeholder="Search payee or memo…"
-        class="w-64 rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+        class="w-64 rounded-md border border-ink-600 bg-ink-700 px-3 py-1.5 text-sm text-paper-100 placeholder:text-mist-500"
       >
       <button
         v-if="unapprovedCount > 0"
-        class="rounded-md border border-sky-400 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-800 hover:bg-sky-100"
+        class="rounded-md border border-accent-400/60 bg-accent-400/10 px-3 py-1.5 text-sm font-medium text-accent-300 hover:bg-accent-400/20"
         @click="approveAll"
       >
         Approve {{ unapprovedCount }} imported
       </button>
     </div>
 
-    <p v-if="reconcileMessage" class="mb-4 rounded-md bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+    <p v-if="reconcileMessage" class="mb-4 rounded-md bg-mist-500/15 px-4 py-2 text-sm text-mist-200">
       {{ reconcileMessage }}
     </p>
 
     <!-- Add / edit form -->
     <form
-      class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-8"
+      class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-ink-700 bg-paper-200 p-4 text-ink-800 md:grid-cols-8"
       @submit.prevent="submit"
     >
-      <input v-model="form.date" type="date" required class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
+      <input v-model="form.date" type="date" required class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
       <input
         v-model="form.payee"
         placeholder="Payee"
         :disabled="editingTransfer"
-        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100"
+        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
       >
       <select
         v-model="form.category"
         :disabled="editingTransfer"
-        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100"
+        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
       >
         <option value="none">No category</option>
         <option value="rta">Inflow: Ready to Assign</option>
@@ -295,14 +295,14 @@ async function remove(txn: Txn) {
           </option>
         </optgroup>
       </select>
-      <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
-      <input v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm">
-      <input v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm">
+      <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
+      <input v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
+      <input v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
       <select
         v-if="!editingUuid"
         v-model="form.repeat"
         title="Repeat"
-        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm"
       >
         <option value="none">No repeat</option>
         <option value="once">Once (scheduled)</option>
@@ -312,13 +312,13 @@ async function remove(txn: Txn) {
         <option value="yearly">Yearly</option>
       </select>
       <div class="flex gap-1">
-        <button type="submit" class="flex-1 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
+        <button type="submit" class="flex-1 rounded-md bg-accent-400 px-3 py-1.5 text-sm font-medium text-ink-900 hover:bg-accent-500">
           {{ editingUuid ? 'Save' : 'Add' }}
         </button>
         <button
           v-if="editingUuid"
           type="button"
-          class="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm text-ink-600 hover:bg-paper-300"
           @click="cancelEdit"
         >
           ✕
@@ -326,32 +326,32 @@ async function remove(txn: Txn) {
       </div>
     </form>
 
-    <p v-if="error" class="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+    <p v-if="error" class="mb-4 rounded-md bg-red-500/15 px-4 py-2 text-sm text-red-300">{{ error }}</p>
 
     <!-- Scheduled transactions -->
-    <div v-if="schedules.length" class="mb-6 rounded-xl border border-slate-200 bg-white">
-      <p class="border-b border-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <div v-if="schedules.length" class="mb-6 rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
+      <p class="border-b border-paper-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-700">
         Scheduled
       </p>
       <table class="w-full text-sm">
         <tbody>
-          <tr v-for="scheduled in schedules" :key="scheduled.uuid" class="border-b border-slate-100 last:border-0">
-            <td class="w-28 px-3 py-2 text-slate-600">{{ scheduled.next_date }}</td>
-            <td class="w-24 px-3 py-2 capitalize text-slate-400">{{ scheduled.frequency }}</td>
+          <tr v-for="scheduled in schedules" :key="scheduled.uuid" class="border-b border-paper-300 last:border-0">
+            <td class="w-28 px-3 py-2 text-ink-700">{{ scheduled.next_date }}</td>
+            <td class="w-24 px-3 py-2 capitalize text-mist-700">{{ scheduled.frequency }}</td>
             <td class="px-3 py-2">{{ scheduled.payee?.name ?? (scheduled.transfer_account_uuid ? 'Transfer' : '—') }}</td>
-            <td class="px-3 py-2 text-slate-600">{{ scheduled.category?.name ?? '' }}</td>
-            <td class="w-28 px-3 py-2 text-right font-medium" :class="scheduled.amount < 0 ? 'text-slate-800' : 'text-emerald-700'">
+            <td class="px-3 py-2 text-ink-700">{{ scheduled.category?.name ?? '' }}</td>
+            <td class="w-28 px-3 py-2 text-right font-medium" :class="scheduled.amount < 0 ? 'text-ink-800' : 'text-emerald-700'">
               {{ formatMoney(scheduled.amount, store.current?.currency) }}
             </td>
             <td class="w-32 pr-2 text-right">
               <button
-                class="rounded border border-emerald-600 px-2 py-0.5 text-xs text-emerald-700 hover:bg-emerald-50"
+                class="rounded border border-accent-500 px-2 py-0.5 text-xs text-accent-600 hover:bg-accent-100"
                 @click="enterScheduled(scheduled)"
               >
                 Enter now
               </button>
               <button
-                class="ml-1 rounded px-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                class="ml-1 rounded px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700"
                 title="Delete"
                 @click="removeScheduled(scheduled)"
               >✕</button>
@@ -361,10 +361,10 @@ async function remove(txn: Txn) {
       </table>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400">
+          <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
             <th class="w-8 px-3 py-3" title="Cleared">C</th>
             <th class="w-28 px-3 py-3">Date</th>
             <th class="px-3 py-3">Payee</th>
@@ -375,39 +375,39 @@ async function remove(txn: Txn) {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loadingRows"><td colspan="7" class="px-4 py-6 text-center text-slate-400">Loading…</td></tr>
-          <tr v-else-if="transactions.length === 0"><td colspan="7" class="px-4 py-6 text-center text-slate-400">No transactions yet.</td></tr>
+          <tr v-if="loadingRows"><td colspan="7" class="px-4 py-6 text-center text-mist-700">Loading…</td></tr>
+          <tr v-else-if="transactions.length === 0"><td colspan="7" class="px-4 py-6 text-center text-mist-700">No transactions yet.</td></tr>
           <tr
             v-for="txn in transactions"
             :key="txn.uuid"
-            class="border-b border-slate-100 hover:bg-slate-50"
-            :class="{ 'bg-emerald-50': editingUuid === txn.uuid }"
+            class="border-b border-paper-300 hover:bg-paper-100"
+            :class="{ 'bg-accent-100': editingUuid === txn.uuid }"
           >
             <td class="px-3 py-2">
               <button
                 class="h-4 w-4 rounded-full border"
-                :class="txn.cleared === 'uncleared' ? 'border-slate-300 bg-white' : 'border-emerald-600 bg-emerald-500'"
+                :class="txn.cleared === 'uncleared' ? 'border-paper-400 bg-paper-50' : 'border-emerald-700 bg-emerald-600'"
                 :title="txn.cleared"
                 @click="toggleCleared(txn)"
               />
             </td>
-            <td class="cursor-pointer px-3 py-2 text-slate-600" @click="startEdit(txn)">{{ txn.date }}</td>
+            <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ txn.date }}</td>
             <td class="cursor-pointer px-3 py-2" @click="startEdit(txn)">
               {{ txn.payee?.name ?? '—' }}
-              <span v-if="!txn.approved" class="ml-1 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700">New</span>
+              <span v-if="!txn.approved" class="ml-1 rounded bg-accent-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-900">New</span>
             </td>
-            <td class="cursor-pointer px-3 py-2 text-slate-600" @click="startEdit(txn)">{{ rowLabel(txn) }}</td>
-            <td class="cursor-pointer px-3 py-2 text-slate-400" @click="startEdit(txn)">{{ txn.memo }}</td>
+            <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ rowLabel(txn) }}</td>
+            <td class="cursor-pointer px-3 py-2 text-mist-700" @click="startEdit(txn)">{{ txn.memo }}</td>
             <td
               class="cursor-pointer px-3 py-2 text-right font-medium"
-              :class="txn.amount < 0 ? 'text-slate-800' : 'text-emerald-700'"
+              :class="txn.amount < 0 ? 'text-ink-800' : 'text-emerald-700'"
               @click="startEdit(txn)"
             >
               {{ formatMoney(txn.amount, store.current?.currency) }}
             </td>
             <td class="pr-2 text-right">
-              <span v-if="txn.cleared === 'reconciled'" class="px-1.5 text-slate-300" title="Reconciled (locked)">🔒</span>
-              <button v-else class="rounded px-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600" title="Delete" @click="remove(txn)">✕</button>
+              <span v-if="txn.cleared === 'reconciled'" class="px-1.5 text-paper-400" title="Reconciled (locked)">🔒</span>
+              <button v-else class="rounded px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700" title="Delete" @click="remove(txn)">✕</button>
             </td>
           </tr>
         </tbody>
@@ -423,9 +423,9 @@ async function remove(txn: Txn) {
 
     <!-- Reconcile modal -->
     <div v-if="showReconcile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Reconcile {{ account?.name }}</h2>
-        <p class="mb-4 text-sm text-slate-500">
+        <p class="mb-4 text-sm text-mist-700">
           Cleared balance is {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}.
           Enter the balance from your bank statement — if it differs, an adjustment
           transaction closes the gap, then all cleared transactions are locked.
@@ -436,11 +436,11 @@ async function remove(txn: Txn) {
             inputmode="decimal"
             required
             placeholder="Statement balance"
-            class="w-full rounded-md border border-slate-300 px-3 py-2"
+            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2"
           >
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-slate-600 hover:bg-slate-100" @click="showReconcile = false">Cancel</button>
-            <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Reconcile</button>
+            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showReconcile = false">Cancel</button>
+            <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Reconcile</button>
           </div>
         </form>
       </div>

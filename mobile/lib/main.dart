@@ -8,6 +8,7 @@ import 'screens/budget_screen.dart';
 import 'screens/lock_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
+import 'theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: BudgieApp()));
@@ -22,10 +23,7 @@ class BudgieApp extends ConsumerWidget {
 
     return MaterialApp(
       title: "Lil' Budgie",
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green.shade700),
-        useMaterial3: true,
-      ),
+      theme: budgieTheme(),
       home: switch (status) {
         AuthStatus.initializing =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),

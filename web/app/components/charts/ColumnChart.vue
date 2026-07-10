@@ -80,7 +80,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
 <template>
   <div class="relative">
     <div v-if="series.length > 1" class="mb-2 flex gap-4">
-      <span v-for="s in series" :key="s.name" class="flex items-center gap-1.5 text-xs text-slate-600">
+      <span v-for="s in series" :key="s.name" class="flex items-center gap-1.5 text-xs text-ink-600">
         <span class="h-2.5 w-2.5 rounded-sm" :style="{ background: s.color }" />
         {{ s.name }}
       </span>
@@ -88,8 +88,8 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
 
     <svg :viewBox="`0 0 ${W} ${H}`" class="w-full" role="img">
       <g v-for="tick in ticks" :key="tick">
-        <line :x1="PAD.left" :x2="W - PAD.right" :y1="y(tick)" :y2="y(tick)" stroke="#e2e8f0" stroke-width="1" />
-        <text :x="PAD.left - 6" :y="y(tick) + 3" text-anchor="end" class="fill-slate-400" font-size="10">
+        <line :x1="PAD.left" :x2="W - PAD.right" :y1="y(tick)" :y2="y(tick)" stroke="#d8d6cf" stroke-width="1" />
+        <text :x="PAD.left - 6" :y="y(tick) + 3" text-anchor="end" class="fill-mist-700" font-size="10">
           {{ compact(tick) }}
         </text>
       </g>
@@ -114,7 +114,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
           :x="slotX(i) + slotWidth / 2"
           :y="H - 8"
           text-anchor="middle"
-          class="fill-slate-400"
+          class="fill-mist-700"
           font-size="10"
         >
           {{ label }}
@@ -124,15 +124,15 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
 
     <div
       v-if="hovered !== null"
-      class="pointer-events-none absolute rounded-md border border-slate-200 bg-white px-3 py-2 text-xs shadow-md"
+      class="pointer-events-none absolute rounded-md border border-paper-400 bg-paper-50 px-3 py-2 text-xs shadow-md"
       :style="{
         left: `${((slotX(hovered) + slotWidth / 2) / W) * 100}%`,
         top: '0px',
         transform: slotX(hovered) > W / 2 ? 'translateX(-100%)' : undefined,
       }"
     >
-      <p class="font-semibold text-slate-700">{{ labels[hovered] }}</p>
-      <p v-for="s in series" :key="s.name" class="mt-0.5 flex items-center gap-1.5 text-slate-600">
+      <p class="font-semibold text-ink-700">{{ labels[hovered] }}</p>
+      <p v-for="s in series" :key="s.name" class="mt-0.5 flex items-center gap-1.5 text-ink-600">
         <span class="h-2 w-2 rounded-sm" :style="{ background: s.color }" />
         {{ s.name }}: {{ formatMoney(s.values[hovered] ?? 0, currency) }}
       </p>

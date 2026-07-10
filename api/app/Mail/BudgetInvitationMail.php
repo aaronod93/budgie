@@ -26,14 +26,16 @@ class BudgetInvitationMail extends Mailable
         $role = $this->invitation->role;
 
         return new Content(htmlString: <<<HTML
-            <div style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 0 auto;">
-                <h2 style="color: #047857;">Lil' Budgie</h2>
+            <div style="font-family: 'Work Sans', system-ui, sans-serif; max-width: 32rem; margin: 0 auto;
+                        background: #191E2A; border-radius: 12px; padding: 24px; color: #E7E6E2;">
+                <h2 style="color: #E3854E; margin-top: 0;">Lil' Budgie</h2>
                 <p><strong>{$inviter}</strong> invited you to share the budget
                    <strong>{$budget}</strong> as {$role}.</p>
-                <p>Sign in (or register with this email address) and accept the
+                <p style="color: #A3C0D0;">Sign in (or register with this email address) and accept the
                    invitation from your budget list.</p>
-                <p><a href="{$app}" style="display: inline-block; background: #059669; color: #fff;
-                      padding: 10px 18px; border-radius: 6px; text-decoration: none;">Open Lil' Budgie</a></p>
+                <p><a href="{$app}" style="display: inline-block; background: #E3854E; color: #131722;
+                      font-weight: 600; padding: 10px 18px; border-radius: 6px;
+                      text-decoration: none;">Open Lil' Budgie</a></p>
             </div>
             HTML);
     }

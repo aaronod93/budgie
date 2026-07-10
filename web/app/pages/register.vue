@@ -29,9 +29,9 @@ async function submit() {
 
 <template>
   <div class="flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Create your account</h1>
-      <p class="mb-6 text-sm text-slate-500">Start budgeting with Lil' Budgie</p>
+    <div class="w-full max-w-sm rounded-xl bg-paper-200 p-8 text-ink-800 shadow-lg">
+      <h1 class="mb-1 text-2xl font-bold text-accent-500">Create your account</h1>
+      <p class="mb-6 text-sm text-mist-700">Start budgeting with Lil' Budgie</p>
 
       <form class="space-y-4" @submit.prevent="submit">
         <div>
@@ -41,7 +41,7 @@ async function submit() {
             v-model="form.name"
             required
             autocomplete="name"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
+            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2 focus:border-accent-400 focus:outline-none"
           >
         </div>
 
@@ -53,7 +53,7 @@ async function submit() {
             type="email"
             required
             autocomplete="email"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
+            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2 focus:border-accent-400 focus:outline-none"
           >
         </div>
 
@@ -65,7 +65,7 @@ async function submit() {
             type="password"
             required
             autocomplete="new-password"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
+            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2 focus:border-accent-400 focus:outline-none"
           >
         </div>
 
@@ -77,7 +77,7 @@ async function submit() {
             type="password"
             required
             autocomplete="new-password"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none"
+            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2 focus:border-accent-400 focus:outline-none"
           >
         </div>
 
@@ -86,15 +86,15 @@ async function submit() {
         <button
           type="submit"
           :disabled="busy"
-          class="w-full rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          class="w-full rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
         >
           {{ busy ? 'Creating account…' : 'Register' }}
         </button>
       </form>
 
-      <p class="mt-6 text-center text-sm text-slate-500">
+      <p class="mt-6 text-center text-sm text-mist-700">
         Already have an account?
-        <NuxtLink to="/login" class="font-medium text-emerald-700 hover:underline">Sign in</NuxtLink>
+        <NuxtLink to="/login" class="font-medium text-accent-600 hover:underline">Sign in</NuxtLink>
       </p>
     </div>
   </div>

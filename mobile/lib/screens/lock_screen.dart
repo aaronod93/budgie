@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth.dart';
+import '../theme.dart';
 
 class LockScreen extends ConsumerStatefulWidget {
   const LockScreen({super.key});
@@ -30,7 +31,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_outline, size: 64, color: Colors.green.shade800),
+              Icon(Icons.lock_outline, size: 64, color: BudgieColors.accent),
               const SizedBox(height: 16),
               Text("Lil' Budgie is locked",
                   style: Theme.of(context).textTheme.titleLarge),
