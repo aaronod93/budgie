@@ -69,6 +69,10 @@ class AccountController extends Controller
         Gate::authorize('update', $budget);
 
         $account->transactions()->delete();
+        $budget->categories()
+            ->where('internal_type', 'credit_card_payment')
+            ->where('linked_account_id', $account->id)
+            ->delete();
         $account->delete();
 
         return response()->noContent();

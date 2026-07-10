@@ -93,6 +93,14 @@ function availableClass(cents: number): string {
 
     <p v-if="error" class="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{{ error }}</p>
 
+    <p
+      v-if="store.month && store.month.credit_overspend > 0"
+      class="mb-4 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-800"
+    >
+      {{ formatMoney(store.month.credit_overspend, store.current?.currency) }} of credit card spending
+      isn't covered by envelopes — it will become card debt unless you assign money to those categories.
+    </p>
+
     <div v-if="store.month" class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table class="w-full text-sm">
         <thead>

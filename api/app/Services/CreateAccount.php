@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\Budget;
+use App\Models\Category;
 use Illuminate\Support\Facades\DB;
 
 class CreateAccount
@@ -23,11 +24,21 @@ class CreateAccount
                 'sort_order' => ($budget->accounts()->max('sort_order') ?? -1) + 1,
             ]);
 
+            // Every credit card gets a linked payment envelope: budgeted card
+            // spending is moved into it by MonthService so the cash to pay the
+            // bill is always reserved (PLAN.md §4).
+            if ($account->type === 'credit') {
+                $this->createPaymentCategory($budget, $account);
+            }
+
             if ($startingBalance !== 0) {
                 $payee = $budget->payees()->firstOrCreate(['name' => 'Starting Balance']);
-                // On-budget starting balances flow to Ready to Assign so the
-                // money is immediately available to budget.
-                $category = $onBudget ? $budget->readyToAssignCategory() : null;
+
+                // On-budget cash flows to Ready to Assign. Pre-existing credit
+                // card debt is just debt — it was never this budget's money.
+                $category = $onBudget && ! ($account->type === 'credit' && $startingBalance < 0)
+                    ? $budget->readyToAssignCategory()
+                    : null;
 
                 $transaction = $account->transactions()->make([
                     'date' => $date ?? now()->toDateString(),
@@ -42,5 +53,23 @@ class CreateAccount
 
             return $account;
         });
+    }
+
+    private function createPaymentCategory(Budget $budget, Account $account): void
+    {
+        $group = $budget->categoryGroups()->firstOrCreate(
+            ['name' => 'Credit Card Payments'],
+            ['sort_order' => ($budget->categoryGroups()->where('internal', false)->max('sort_order') ?? -1) + 1],
+        );
+
+        $category = new Category([
+            'name' => $account->name,
+            'category_group_id' => $group->id,
+            'sort_order' => ($group->categories()->max('sort_order') ?? -1) + 1,
+        ]);
+        $category->budget_id = $budget->id;
+        $category->internal_type = 'credit_card_payment';
+        $category->linked_account_id = $account->id;
+        $category->save();
     }
 }

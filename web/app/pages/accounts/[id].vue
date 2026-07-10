@@ -14,13 +14,28 @@ interface Txn {
   splits: { uuid: string, amount: number, category_uuid: string | null, memo: string | null }[]
 }
 
+interface Scheduled {
+  uuid: string
+  frequency: string
+  next_date: string
+  amount: number
+  memo: string | null
+  payee: { uuid: string, name: string } | null
+  category: { uuid: string, name: string } | null
+  transfer_account_uuid: string | null
+}
+
 const route = useRoute()
 const store = useBudgetStore()
 
 const transactions = ref<Txn[]>([])
+const schedules = ref<Scheduled[]>([])
 const loadingRows = ref(false)
 const error = ref('')
 const editingUuid = ref<string | null>(null)
+const showReconcile = ref(false)
+const statementBalance = ref('')
+const reconcileMessage = ref('')
 
 const blankForm = () => ({
   date: new Date().toISOString().slice(0, 10),
@@ -29,6 +44,7 @@ const blankForm = () => ({
   memo: '',
   outflow: '',
   inflow: '',
+  repeat: 'none' as string,
 })
 const form = reactive(blankForm())
 
@@ -46,9 +62,12 @@ async function load() {
   if (!store.current) return
   loadingRows.value = true
   try {
-    transactions.value = (await apiFetch<{ data: Txn[] }>(
-      `${store.base}/transactions?account_id=${accountUuid.value}`,
-    )).data
+    const [txns, scheds] = await Promise.all([
+      apiFetch<{ data: Txn[] }>(`${store.base}/transactions?account_id=${accountUuid.value}`),
+      apiFetch<{ data: Scheduled[] }>(`${store.base}/scheduled-transactions?account_id=${accountUuid.value}`),
+    ])
+    transactions.value = txns.data
+    schedules.value = scheds.data
   } finally {
     loadingRows.value = false
   }
@@ -108,6 +127,13 @@ async function submit() {
       // account_id / transfer_account_id are fixed after creation
       delete body.transfer_account_id
       await apiFetch(`${store.base}/transactions/${editingUuid.value}`, { method: 'PATCH', body })
+    } else if (form.repeat !== 'none') {
+      // Repeat selected: create a schedule instead of posting immediately.
+      body.account_id = accountUuid.value
+      body.frequency = form.repeat
+      body.next_date = form.date
+      delete body.date
+      await apiFetch(`${store.base}/scheduled-transactions`, { method: 'POST', body })
     } else {
       body.account_id = accountUuid.value
       await apiFetch(`${store.base}/transactions`, { method: 'POST', body })
@@ -117,6 +143,39 @@ async function submit() {
   } catch (e) {
     const err = e as { data?: { message?: string } }
     error.value = err.data?.message ?? 'Could not save the transaction.'
+  }
+}
+
+async function enterScheduled(scheduled: Scheduled) {
+  await apiFetch(`${store.base}/scheduled-transactions/${scheduled.uuid}/enter`, { method: 'POST' })
+  await Promise.all([load(), store.loadAccounts()])
+}
+
+async function removeScheduled(scheduled: Scheduled) {
+  if (!confirm('Delete this scheduled transaction?')) return
+  await apiFetch(`${store.base}/scheduled-transactions/${scheduled.uuid}`, { method: 'DELETE' })
+  await load()
+}
+
+async function reconcile() {
+  const balance = parseMoney(statementBalance.value)
+  if (balance === null) return
+  reconcileMessage.value = ''
+  try {
+    const result = await apiFetch<{ adjustment: { amount: number } | null }>(
+      `${store.base}/accounts/${accountUuid.value}/reconcile`,
+      { method: 'POST', body: { statement_balance: balance } },
+    )
+    reconcileMessage.value = result.adjustment
+      ? `Reconciled — an adjustment of ${formatMoney(result.adjustment.amount, store.current?.currency)} was created.`
+      : 'Reconciled — everything matched.'
+    showReconcile.value = false
+    statementBalance.value = ''
+    await Promise.all([load(), store.loadAccounts()])
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not reconcile.'
+    showReconcile.value = false
   }
 }
 
@@ -143,19 +202,31 @@ async function remove(txn: Txn) {
         <h1 class="text-xl font-bold">{{ account?.name ?? 'Account' }}</h1>
         <p class="text-sm text-slate-500 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
       </div>
-      <div class="text-right">
-        <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-600' : 'text-emerald-700'">
-          {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
-        </p>
-        <p class="text-xs text-slate-400">
-          Cleared: {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}
-        </p>
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-600' : 'text-emerald-700'">
+            {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
+          </p>
+          <p class="text-xs text-slate-400">
+            Cleared: {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}
+          </p>
+        </div>
+        <button
+          class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-white"
+          @click="showReconcile = true; statementBalance = centsToInput(account?.cleared_balance ?? 0)"
+        >
+          Reconcile
+        </button>
       </div>
     </header>
 
+    <p v-if="reconcileMessage" class="mb-4 rounded-md bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+      {{ reconcileMessage }}
+    </p>
+
     <!-- Add / edit form -->
     <form
-      class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-7"
+      class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-8"
       @submit.prevent="submit"
     >
       <input v-model="form.date" type="date" required class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
@@ -186,6 +257,19 @@ async function remove(txn: Txn) {
       <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
       <input v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm">
       <input v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm">
+      <select
+        v-if="!editingUuid"
+        v-model="form.repeat"
+        title="Repeat"
+        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+      >
+        <option value="none">No repeat</option>
+        <option value="once">Once (scheduled)</option>
+        <option value="weekly">Weekly</option>
+        <option value="fortnightly">Fortnightly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
       <div class="flex gap-1">
         <button type="submit" class="flex-1 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
           {{ editingUuid ? 'Save' : 'Add' }}
@@ -202,6 +286,39 @@ async function remove(txn: Txn) {
     </form>
 
     <p v-if="error" class="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+
+    <!-- Scheduled transactions -->
+    <div v-if="schedules.length" class="mb-6 rounded-xl border border-slate-200 bg-white">
+      <p class="border-b border-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        Scheduled
+      </p>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr v-for="scheduled in schedules" :key="scheduled.uuid" class="border-b border-slate-100 last:border-0">
+            <td class="w-28 px-3 py-2 text-slate-600">{{ scheduled.next_date }}</td>
+            <td class="w-24 px-3 py-2 capitalize text-slate-400">{{ scheduled.frequency }}</td>
+            <td class="px-3 py-2">{{ scheduled.payee?.name ?? (scheduled.transfer_account_uuid ? 'Transfer' : '—') }}</td>
+            <td class="px-3 py-2 text-slate-600">{{ scheduled.category?.name ?? '' }}</td>
+            <td class="w-28 px-3 py-2 text-right font-medium" :class="scheduled.amount < 0 ? 'text-slate-800' : 'text-emerald-700'">
+              {{ formatMoney(scheduled.amount, store.current?.currency) }}
+            </td>
+            <td class="w-32 pr-2 text-right">
+              <button
+                class="rounded border border-emerald-600 px-2 py-0.5 text-xs text-emerald-700 hover:bg-emerald-50"
+                @click="enterScheduled(scheduled)"
+              >
+                Enter now
+              </button>
+              <button
+                class="ml-1 rounded px-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                title="Delete"
+                @click="removeScheduled(scheduled)"
+              >✕</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table class="w-full text-sm">
@@ -245,11 +362,37 @@ async function remove(txn: Txn) {
               {{ formatMoney(txn.amount, store.current?.currency) }}
             </td>
             <td class="pr-2 text-right">
-              <button class="rounded px-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600" title="Delete" @click="remove(txn)">✕</button>
+              <span v-if="txn.cleared === 'reconciled'" class="px-1.5 text-slate-300" title="Reconciled (locked)">🔒</span>
+              <button v-else class="rounded px-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600" title="Delete" @click="remove(txn)">✕</button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Reconcile modal -->
+    <div v-if="showReconcile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        <h2 class="mb-1 text-lg font-semibold">Reconcile {{ account?.name }}</h2>
+        <p class="mb-4 text-sm text-slate-500">
+          Cleared balance is {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}.
+          Enter the balance from your bank statement — if it differs, an adjustment
+          transaction closes the gap, then all cleared transactions are locked.
+        </p>
+        <form class="space-y-4" @submit.prevent="reconcile">
+          <input
+            v-model="statementBalance"
+            inputmode="decimal"
+            required
+            placeholder="Statement balance"
+            class="w-full rounded-md border border-slate-300 px-3 py-2"
+          >
+          <div class="flex justify-end gap-2">
+            <button type="button" class="rounded-md px-4 py-2 text-slate-600 hover:bg-slate-100" @click="showReconcile = false">Cancel</button>
+            <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700">Reconcile</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>

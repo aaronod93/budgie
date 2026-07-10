@@ -43,6 +43,8 @@ class RecordTransaction
 
     public function update(Transaction $transaction, array $data): Transaction
     {
+        $this->guardReconciled($transaction, $data);
+
         return DB::transaction(function () use ($transaction, $data): Transaction {
             $budget = $transaction->budget;
 
@@ -78,8 +80,12 @@ class RecordTransaction
         });
     }
 
-    public function delete(Transaction $transaction): void
+    public function delete(Transaction $transaction, bool $force = false): void
     {
+        if (! $force) {
+            $this->guardReconciled($transaction, []);
+        }
+
         DB::transaction(function () use ($transaction): void {
             $transaction->subTransactions()->delete();
 
@@ -90,6 +96,16 @@ class RecordTransaction
 
             $transaction->delete();
         });
+    }
+
+    /** Reconciled transactions are locked; only an explicit force unlocks them. */
+    private function guardReconciled(Transaction $transaction, array $data): void
+    {
+        if ($transaction->cleared === 'reconciled' && empty($data['force'])) {
+            throw ValidationException::withMessages([
+                'transaction' => 'This transaction is reconciled and locked. Pass force=true to modify it.',
+            ]);
+        }
     }
 
     private function createTransfer(Budget $budget, array $data): Transaction

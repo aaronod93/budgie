@@ -76,11 +76,11 @@ class TransactionController extends Controller
         return new TransactionResource($transaction->load(self::EAGER));
     }
 
-    public function destroy(Budget $budget, Transaction $transaction, RecordTransaction $recorder)
+    public function destroy(Request $request, Budget $budget, Transaction $transaction, RecordTransaction $recorder)
     {
         Gate::authorize('update', $budget);
 
-        $recorder->delete($transaction);
+        $recorder->delete($transaction, $request->boolean('force'));
 
         return response()->noContent();
     }
@@ -97,6 +97,7 @@ class TransactionController extends Controller
             'memo' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'cleared' => ['sometimes', 'in:uncleared,cleared,reconciled'],
             'approved' => ['sometimes', 'boolean'],
+            'force' => ['sometimes', 'boolean'],
             'import_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             'transfer_account_id' => [$creating ? 'sometimes' : 'prohibited', 'uuid', 'prohibits:splits'],
             'splits' => ['sometimes', 'array', 'max:50'],

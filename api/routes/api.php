@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\CategoryGroupController;
 use App\Http\Controllers\Api\V1\MonthController;
 use App\Http\Controllers\Api\V1\MoveMoneyController;
 use App\Http\Controllers\Api\V1\PayeeController;
+use App\Http\Controllers\Api\V1\ReconcileController;
+use App\Http\Controllers\Api\V1\ScheduledTransactionController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
             Route::apiResource('payees', PayeeController::class)->only(['index', 'update']);
             Route::apiResource('transactions', TransactionController::class);
+            Route::apiResource('scheduled-transactions', ScheduledTransactionController::class)->except('show');
+            Route::post('scheduled-transactions/{scheduled_transaction}/enter', [ScheduledTransactionController::class, 'enter']);
+            Route::post('accounts/{account}/reconcile', ReconcileController::class);
 
             Route::get('months/{month}', [MonthController::class, 'show'])
                 ->where('month', '\d{4}-\d{2}');

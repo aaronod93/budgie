@@ -50,7 +50,10 @@ class MoveMoneyController extends Controller
             return null;
         }
 
-        $category = $budget->categories()->whereNull('internal_type')->where('uuid', $uuid)->first();
+        $category = $budget->categories()
+            ->where('uuid', $uuid)
+            ->where(fn ($q) => $q->whereNull('internal_type')->orWhere('internal_type', 'credit_card_payment'))
+            ->first();
 
         if ($category === null) {
             throw ValidationException::withMessages([$field => 'Unknown category.']);

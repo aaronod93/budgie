@@ -31,6 +31,7 @@ export interface CategoryGroupFull {
 export interface MonthCategory {
   uuid: string
   name: string
+  is_credit_card_payment: boolean
   assigned: number
   activity: number
   available: number
@@ -46,6 +47,7 @@ export interface MonthPayload {
   month: string
   ready_to_assign: number
   income: number
+  credit_overspend: number
   assigned_total: number
   activity_total: number
   available_total: number

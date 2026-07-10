@@ -50,6 +50,11 @@ class Budget extends Model
         return $this->hasMany(MonthlyBudget::class);
     }
 
+    public function scheduledTransactions(): HasMany
+    {
+        return $this->hasMany(ScheduledTransaction::class);
+    }
+
     public function readyToAssignCategory(): Category
     {
         return $this->categories()->where('internal_type', 'ready_to_assign')->firstOrFail();

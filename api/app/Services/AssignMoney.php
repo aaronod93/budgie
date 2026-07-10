@@ -15,9 +15,9 @@ class AssignMoney
      */
     public function __invoke(Budget $budget, CarbonImmutable $month, Category $category, int $amount): void
     {
-        if ($category->internal_type !== null) {
+        if ($category->isReadyToAssign()) {
             throw ValidationException::withMessages([
-                'category' => 'Cannot assign to an internal category.',
+                'category' => 'Cannot assign to Ready to Assign.',
             ]);
         }
 
