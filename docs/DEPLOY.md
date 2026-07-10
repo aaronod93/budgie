@@ -120,9 +120,12 @@ Two hardening notes before distributing a release build:
 
 ## Notes
 
-- **Container names**: on the `edge` network Budgie's services use the
-  aliases `budgie-web`, `budgie-api`, `budgie-reverb`, so they can never
-  collide with StaceLib's `web`/`api` service names.
+- **Service names**: the edge-facing services are *named* `budgie-web`,
+  `budgie-api`, `budgie-reverb` — not `web`/`api`. Docker adds a service's own
+  name as a DNS alias on **every** network it joins, so a Budgie service named
+  plain `web` would also answer to `web` on the shared `edge` network and
+  StaceLib's Caddy (attached to both networks) would resolve its `web:3000`
+  upstream to BOTH apps, round-robin. Never rename these back.
 - **Websockets** ride the API domain: browsers connect to
   `wss://api.lilbudgie.com/app/{key}` (Caddy routes `/app/*` to the
   reverb container); the API publishes to `reverb:8080` container-to-container.

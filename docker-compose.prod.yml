@@ -10,8 +10,13 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 name: budgie-prod
 
+# NB: the edge-facing services are NAMED budgie-api/budgie-web/budgie-reverb
+# on purpose. Docker adds a service's own name as a DNS alias on EVERY network
+# it joins - a service named plain "web" on the shared edge network would
+# collide with StaceLib's "web" and hijack its Caddy upstream (round-robin).
+
 services:
-  api:
+  budgie-api:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
@@ -20,7 +25,6 @@ services:
     networks:
       default:
       edge:
-        aliases: [budgie-api]
     depends_on:
       mariadb:
         condition: service_healthy
@@ -42,7 +46,7 @@ services:
     healthcheck:
       disable: true
     depends_on:
-      - api
+      - budgie-api
 
   # Cron: posts due scheduled transactions daily (budgie:post-scheduled).
   scheduler:
@@ -57,11 +61,11 @@ services:
     healthcheck:
       disable: true
     depends_on:
-      - api
+      - budgie-api
 
   # Websockets: live multi-device refresh. Caddy proxies wss on the API
   # domain's /app/* path to this container.
-  reverb:
+  budgie-reverb:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
@@ -75,11 +79,10 @@ services:
     networks:
       default:
       edge:
-        aliases: [budgie-reverb]
     depends_on:
-      - api
+      - budgie-api
 
-  web:
+  budgie-web:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
@@ -93,7 +96,6 @@ services:
     networks:
       default:
       edge:
-        aliases: [budgie-web]
 
   mariadb:
     image: mariadb:11

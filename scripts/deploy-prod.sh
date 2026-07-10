@@ -17,7 +17,7 @@ echo "==> Building and starting containers"
 $COMPOSE up -d --build
 
 echo "==> Running database migrations"
-$COMPOSE exec -T api php artisan migrate --force
+$COMPOSE exec -T budgie-api php artisan migrate --force
 
 echo "==> Done. Container status:"
 $COMPOSE ps
