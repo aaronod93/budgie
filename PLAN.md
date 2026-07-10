@@ -1,4 +1,4 @@
-# Budgie — Envelope Budgeting App (YNAB-style)
+# Lil' Budgie (lilbudgie.com) — Envelope Budgeting App
 
 A zero-based envelope budgeting system: every dollar you actually have gets assigned to a
 category ("envelope"), you spend against envelope balances, and you rebalance by moving money
@@ -12,17 +12,18 @@ between envelopes. Built as three apps sharing one API:
 
 ---
 
-## 1. Core Concepts & Rules (the domain)
+## 1. Core Concepts (the domain)
 
-These four rules drive every design decision below:
+These principles drive every design decision below:
 
-1. **Give Every Dollar a Job** — income lands in "Ready to Assign" (RTA); the user
+1. **Assign every dollar** — income lands in "Ready to Assign" (RTA); the user
    distributes it into categories until RTA = 0. You can only assign money you have.
-2. **Embrace True Expenses** — targets/goals on categories let you drip-fund irregular
-   expenses (e.g. $50/mo toward annual insurance).
-3. **Roll With the Punches** — first-class "move money" between categories; overspending
+2. **Save ahead for irregular expenses** — targets/goals on categories let you drip-fund
+   non-monthly costs (e.g. $50/mo toward annual insurance).
+3. **Rebalance freely** — first-class "move money" between categories; overspending
    is surfaced, not punished.
-4. **Age Your Money** — a computed metric: average age (in days) of the dollars being spent.
+4. **Age of Money** — a computed metric: average age (in days) of the dollars being spent.
+   Older is better; it means you're spending last month's income, not today's.
 
 ### Key derived numbers (never stored, always computed or cached with invalidation)
 
@@ -88,7 +89,7 @@ receipt scanning.
 ## 3. Data Model (MariaDB)
 
 All money is stored as **integer minor units** (cents) — never floats. If multi-currency
-per budget ever lands, switch to milliunits like YNAB; cents is fine for a single-currency
+per budget ever lands, switch to milliunits; cents is fine for a single-currency
 budget.
 
 **Keys — hybrid scheme**: every table uses a **BIGINT auto-increment `id`** as its primary
@@ -154,7 +155,7 @@ gets slow.
 
 ## 4. The Hard Mechanics (get these right early)
 
-### Credit cards — the signature YNAB behaviour
+### Credit cards — the signature envelope-budgeting mechanic
 When you create a credit card account, auto-create a **Credit Card Payment category**
 linked to it. Then:
 
@@ -247,7 +248,7 @@ returned by the month/account endpoints.
   progress bars, right sidebar for the selected category's target/quick actions),
   **Accounts/Register** (virtualised transaction table, inline add/edit row, bulk edit,
   running balance), **Reports**, **Reconcile flow**, **Settings**.
-- Keyboard-first register entry (YNAB's killer feature): tab-through fields, payee/category
+- Keyboard-first register entry: tab-through fields, payee/category
   autocomplete with fuzzy match, `Enter` saves + opens a new row.
 - Currency input/display via a shared formatting util; all amounts move over the wire as
   integer cents.
@@ -290,17 +291,18 @@ budgie/
 |---|---|---|
 | **0. Skeleton** ✅ | Monorepo, docker-compose, Laravel + Sanctum auth, Nuxt shell with login, CI | Log in on web |
 | **1. Budget core (API+web)** ✅ | Budgets, accounts, categories, transactions (incl. splits/transfers), monthly_budgets, RTA + available math, budget screen, register | Usable single-device web budget |
-| **2. The hard mechanics** ✅ | Credit card categories, reconciliation, scheduled transactions, move-money UX, month navigation | Feature parity with core YNAB loop |
+| **2. The hard mechanics** ✅ | Credit card categories, reconciliation, scheduled transactions, move-money UX, month navigation | Full core envelope-budgeting loop |
 | **3. Mobile** ✅ | Flutter app (register + budget + add-transaction) as a pure online client | Phone capture, web planning |
-| **4. QoL** ✅ | Targets/goals, reports, CSV import, payee rules, search | Daily-driver replacement for YNAB |
-| **5. Sharing & live** | Shared budgets (partner invite), notifications, Reverb live sync | Multi-user budgeting |
+| **4. QoL** ✅ | Targets/goals, reports, CSV import, payee rules, search | Daily-driver budgeting app |
+| **5. Sharing & live** ✅ | Shared budgets (partner invite), invitation emails, audit log, Reverb live sync | Multi-user budgeting |
 
 ## 10. Decisions (resolved 2026-07-10)
 
 1. **Single currency per budget**, AUD default.
 2. **No bank feeds** — CSV/OFX import is the permanent import path.
 3. **Multi-user sharing is required** (partner budgeting) — scheduled as Phase 5.
-4. **Hosting mirrors StaceLib** (`../stacelib`): a single VPS running
-   `docker-compose.prod.yml` — Caddy (Cloudflare DNS TLS) reverse-proxying `api` and
-   `web` containers, a `worker` container for queues, a scheduler, MariaDB and Redis —
-   deployed via per-app GitHub Actions workflows (`api.yml`, `web.yml`, `mobile.yml`).
+4. **Hosting: co-located with StaceLib on the same VPS** (built ✅ — see
+   `docs/DEPLOY.md`): Budgie's `docker-compose.prod.yml` runs api/worker/scheduler/
+   reverb/web/MariaDB/Redis with no published ports; StaceLib's Caddy routes the
+   Budgie hostnames to them over a shared `edge` docker network (websockets ride
+   the API domain at `/app/*`). CI stays per-app (`api.yml`, `web.yml`, `mobile.yml`).

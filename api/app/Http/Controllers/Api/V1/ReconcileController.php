@@ -8,6 +8,7 @@ use App\Http\Resources\TransactionResource;
 use App\Models\Account;
 use App\Models\Budget;
 use App\Services\ReconcileAccount;
+use App\Services\RecordActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,6 +23,14 @@ class ReconcileController extends Controller
         ]);
 
         $result = $reconcile($account, $data['statement_balance']);
+
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'account.reconciled',
+            "Reconciled {$account->name} to ".TransactionController::dollars($data['statement_balance']),
+            $account->uuid,
+        );
 
         $fresh = $budget->accounts()
             ->withSum('transactions as balance', 'amount')

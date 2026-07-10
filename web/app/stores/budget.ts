@@ -4,7 +4,15 @@ export interface Budget {
   uuid: string
   name: string
   currency: string
+  role: 'owner' | 'editor' | 'viewer'
   ready_to_assign_category_uuid: string
+}
+
+export interface PendingInvitation {
+  uuid: string
+  budget_name: string
+  invited_by: string
+  role: string
 }
 
 export interface Account {
@@ -83,6 +91,8 @@ export const useBudgetStore = defineStore('budget', () => {
   const month = ref<MonthPayload | null>(null)
   const monthKey = ref(currentMonthKey())
   const initialized = ref(false)
+  const invitations = ref<PendingInvitation[]>([])
+  const liveMessage = ref<string | null>(null)
 
   const base = computed(() => `/api/v1/budgets/${current.value?.uuid}`)
 
@@ -165,9 +175,37 @@ export const useBudgetStore = defineStore('budget', () => {
     await loadMonth()
   }
 
+  async function loadInvitations(): Promise<void> {
+    invitations.value = (await apiFetch<{ data: PendingInvitation[] }>('/api/v1/invitations')).data
+  }
+
+  async function acceptInvitation(uuid: string): Promise<void> {
+    await apiFetch(`/api/v1/invitations/${uuid}/accept`, { method: 'POST' })
+    budgets.value = (await apiFetch<{ data: Budget[] }>('/api/v1/budgets')).data
+    await loadInvitations()
+  }
+
+  async function declineInvitation(uuid: string): Promise<void> {
+    await apiFetch(`/api/v1/invitations/${uuid}`, { method: 'DELETE' })
+    await loadInvitations()
+  }
+
+  /** Another device changed the budget: refresh what's on screen. */
+  async function refreshFromLive(description: string | null): Promise<void> {
+    liveMessage.value = description
+    await Promise.all([loadAccounts(), month.value ? loadMonth() : Promise.resolve()])
+    if (description) {
+      setTimeout(() => {
+        if (liveMessage.value === description) liveMessage.value = null
+      }, 5000)
+    }
+  }
+
   return {
     budgets, current, accounts, groups, month, monthKey, initialized, base,
+    invitations, liveMessage,
     init, selectBudget, createBudget, loadAccounts, loadGroups, addAccount,
     loadMonth, shiftMonth, assign, moveMoney, assignUnderfunded, setTarget, removeTarget,
+    loadInvitations, acceptInvitation, declineInvitation, refreshFromLive,
   }
 })

@@ -66,7 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Budgie',
+                Text("Lil' Budgie",
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.green.shade800, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),

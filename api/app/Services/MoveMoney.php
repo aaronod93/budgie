@@ -11,9 +11,9 @@ use Illuminate\Validation\ValidationException;
 class MoveMoney
 {
     /**
-     * Move budgeted money between envelopes in a month (Rule 3: Roll With the
-     * Punches). A null category means Ready to Assign: moving from RTA assigns
-     * more to the target; moving to RTA un-assigns.
+     * Move budgeted money between envelopes in a month. A null category means
+     * Ready to Assign: moving from RTA assigns more to the target; moving to
+     * RTA un-assigns.
      */
     public function __invoke(Budget $budget, CarbonImmutable $month, ?Category $from, ?Category $to, int $amount): void
     {

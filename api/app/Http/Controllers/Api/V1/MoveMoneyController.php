@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Budget;
 use App\Services\MonthService;
 use App\Services\MoveMoney;
+use App\Services\RecordActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -33,12 +34,20 @@ class MoveMoneyController extends Controller
 
         $parsed = MonthController::parseMonth($month);
 
-        $move(
+        $from = $this->findCategory($budget, $data['from_category_id'] ?? null, 'from_category_id');
+        $to = $this->findCategory($budget, $data['to_category_id'] ?? null, 'to_category_id');
+
+        $move($budget, $parsed, $from, $to, $data['amount']);
+
+        app(RecordActivity::class)(
             $budget,
-            $parsed,
-            $this->findCategory($budget, $data['from_category_id'] ?? null, 'from_category_id'),
-            $this->findCategory($budget, $data['to_category_id'] ?? null, 'to_category_id'),
-            $data['amount'],
+            $request->user(),
+            'budget.moved',
+            sprintf('Moved %s from %s to %s in %s',
+                TransactionController::dollars($data['amount']),
+                $from?->name ?? 'Ready to Assign',
+                $to?->name ?? 'Ready to Assign',
+                $month),
         );
 
         return response()->json($months->compute($budget, $parsed));

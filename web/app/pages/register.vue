@@ -31,7 +31,7 @@ async function submit() {
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow">
       <h1 class="mb-1 text-2xl font-bold text-emerald-700">Create your account</h1>
-      <p class="mb-6 text-sm text-slate-500">Start budgeting with Budgie</p>
+      <p class="mb-6 text-sm text-slate-500">Start budgeting with Lil' Budgie</p>
 
       <form class="space-y-4" @submit.prevent="submit">
         <div>

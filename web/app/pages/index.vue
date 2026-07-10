@@ -29,7 +29,7 @@ async function create() {
 <template>
   <div class="flex min-h-screen items-center justify-center p-4">
     <div v-if="store.initialized && !store.current" class="w-full max-w-sm rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Welcome to Budgie</h1>
+      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Welcome to Lil' Budgie</h1>
       <p class="mb-6 text-sm text-slate-500">Name your first budget to get started.</p>
       <form class="space-y-4" @submit.prevent="create">
         <input v-model="name" required class="w-full rounded-md border border-slate-300 px-3 py-2">

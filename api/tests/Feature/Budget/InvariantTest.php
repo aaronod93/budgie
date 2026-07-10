@@ -19,8 +19,8 @@ use Illuminate\Validation\ValidationException;
  * Random operation sequences — income, cash & card spending, assigning (to
  * spending AND payment envelopes), moving, transfers, card payments — must
  * never break it. (Card refunds are exercised in CreditCardTest; a net refund
- * exceeding all card spending creates a positive card balance, which YNAB and
- * Budgie both treat as a to-be-fixed anomaly rather than budget money.)
+ * exceeding all card spending creates a positive card balance, which is
+ * treated as a to-be-fixed anomaly rather than budget money.)
  */
 test('rta plus envelopes plus credit overspend equals on-budget cash', function (int $seed) {
     $budget = budgetFor(login());

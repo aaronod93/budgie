@@ -191,8 +191,8 @@ class MonthService
     }
 
     /**
-     * Target progress for one category in the viewed month (Rule 2: Embrace
-     * Your True Expenses).
+     * Target progress for one category in the viewed month (saving ahead for
+     * irregular expenses).
      */
     private function targetPayload(Target $goal, int $assigned, int $available, CarbonImmutable $month): array
     {

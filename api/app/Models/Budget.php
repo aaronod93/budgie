@@ -20,6 +20,31 @@ class Budget extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(BudgetMember::class);
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(BudgetInvitation::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
+    /** The user's role on this budget: 'owner', 'editor', 'viewer', or null. */
+    public function roleOf(User $user): ?string
+    {
+        if ($this->user_id === $user->id) {
+            return 'owner';
+        }
+
+        return $this->memberships()->where('user_id', $user->id)->value('role');
+    }
+
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);

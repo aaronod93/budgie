@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\V1\Concerns\ResolvesBudgetUuids;
 use App\Http\Controllers\Controller;
 use App\Models\Budget;
+use App\Services\RecordActivity;
 use App\Services\RecordTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class ImportController extends Controller
     /**
      * Bulk-import normalized rows (the web CSV wizard does the parsing and
      * column mapping). Dedupe is by import_id — "v1:amount:date:occurrence",
-     * YNAB-style — so re-importing the same file skips everything, while two
+     * — so re-importing the same file skips everything, while two
      * genuinely identical transactions in one file still both import. Deleted
      * imports stay deleted (trashed rows count as existing).
      */
@@ -72,6 +73,16 @@ class ImportController extends Controller
                 $imported++;
             }
         });
+
+        if ($imported > 0) {
+            $accountName = $budget->accounts()->whereKey($accountId)->value('name');
+            app(RecordActivity::class)(
+                $budget,
+                $request->user(),
+                'transactions.imported',
+                "Imported $imported transaction(s) into $accountName",
+            );
+        }
 
         return response()->json(['imported' => $imported, 'skipped' => $skipped], 201);
     }

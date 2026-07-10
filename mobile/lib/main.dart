@@ -21,7 +21,7 @@ class BudgieApp extends ConsumerWidget {
     final status = ref.watch(authProvider.select((auth) => auth.status));
 
     return MaterialApp(
-      title: 'Budgie',
+      title: "Lil' Budgie",
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green.shade700),
         useMaterial3: true,

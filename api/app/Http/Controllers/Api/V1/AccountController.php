@@ -7,6 +7,7 @@ use App\Http\Resources\AccountResource;
 use App\Models\Account;
 use App\Models\Budget;
 use App\Services\CreateAccount;
+use App\Services\RecordActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -36,6 +37,14 @@ class AccountController extends Controller
             ['name' => $data['name'], 'type' => $data['type'], 'note' => $data['note'] ?? null],
             $data['balance'] ?? 0,
             $data['balance_date'] ?? null,
+        );
+
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'account.created',
+            "Added {$data['type']} account {$account->name}",
+            $account->uuid,
         );
 
         return (new AccountResource($this->fresh($budget, $account)))->response()->setStatusCode(201);

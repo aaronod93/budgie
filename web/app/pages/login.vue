@@ -26,7 +26,7 @@ async function submit() {
 <template>
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow">
-      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Budgie</h1>
+      <h1 class="mb-1 text-2xl font-bold text-emerald-700">Lil' Budgie</h1>
       <p class="mb-6 text-sm text-slate-500">Sign in to your budget</p>
 
       <form class="space-y-4" @submit.prevent="submit">

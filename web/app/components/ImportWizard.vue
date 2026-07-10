@@ -105,7 +105,7 @@ async function submit() {
     <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
       <h2 class="mb-1 text-lg font-semibold">Import transactions</h2>
       <p class="mb-4 text-sm text-slate-500">
-        Upload a CSV from your bank, map the columns, and Budgie will skip anything it has seen before.
+        Upload a CSV from your bank, map the columns, and Lil' Budgie will skip anything it has seen before.
       </p>
 
       <div v-if="result" class="space-y-4">

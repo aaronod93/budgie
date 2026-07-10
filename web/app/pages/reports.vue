@@ -107,7 +107,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
           <p class="text-3xl font-bold text-slate-900">
             {{ ageOfMoney === null ? '—' : `${ageOfMoney} days` }}
           </p>
-          <p class="mt-1 text-sm text-slate-500">Age of Money (Rule 4: aim for 30+)</p>
+          <p class="mt-1 text-sm text-slate-500">Age of Money (aim for 30+)</p>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-5">
           <p class="text-3xl font-bold text-slate-900">{{ formatMoney(spending.total, store.current?.currency) }}</p>

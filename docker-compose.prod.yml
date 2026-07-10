@@ -1,0 +1,126 @@
+# Production stack for Budgie, co-hosted on the same VPS as StaceLib.
+# See docs/DEPLOY.md.
+#
+# There is deliberately NO reverse proxy and NO published port here:
+# StaceLib's Caddy (which already owns 80/443 on the box) routes the Budgie
+# hostnames to these containers over the shared external `edge` network.
+#
+#   docker network create edge            # one-time, on the server
+#   cp .env.production.example .env       # fill in domains, APP_KEY, passwords
+#   docker compose -f docker-compose.prod.yml up -d --build
+name: budgie-prod
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      default:
+      edge:
+        aliases: [budgie-api]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Queue worker (mail, future notifications).
+  worker:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3", "--max-time=3600"]
+    environment:
+      AUTORUN_ENABLED: "false"
+    env_file: .env
+    # The base image's healthcheck probes the web server, which this
+    # command-override container doesn't run.
+    healthcheck:
+      disable: true
+    depends_on:
+      - api
+
+  # Cron: posts due scheduled transactions daily (budgie:post-scheduled).
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    environment:
+      AUTORUN_ENABLED: "false"
+    env_file: .env
+    healthcheck:
+      disable: true
+    depends_on:
+      - api
+
+  # Websockets: live multi-device refresh. Caddy proxies wss on the API
+  # domain's /app/* path to this container.
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    environment:
+      AUTORUN_ENABLED: "false"
+    env_file: .env
+    healthcheck:
+      disable: true
+    networks:
+      default:
+      edge:
+        aliases: [budgie-reverb]
+    depends_on:
+      - api
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    restart: unless-stopped
+    environment:
+      NUXT_PUBLIC_API_BASE: https://${API_DOMAIN}
+      NUXT_PUBLIC_REVERB_KEY: ${REVERB_APP_KEY}
+      NUXT_PUBLIC_REVERB_HOST: ${API_DOMAIN}
+      NUXT_PUBLIC_REVERB_PORT: 443
+      NUXT_PUBLIC_REVERB_SCHEME: https
+    networks:
+      default:
+      edge:
+        aliases: [budgie-web]
+
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  mariadb-data:
+  redis-data:

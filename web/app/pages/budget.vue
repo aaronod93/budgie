@@ -252,7 +252,7 @@ async function assignAllUnderfunded() {
     <div v-if="goalCategory" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Target for {{ goalCategory.name }}</h2>
-        <p class="mb-4 text-sm text-slate-500">Rule 2: plan for true expenses by dripping money in monthly.</p>
+        <p class="mb-4 text-sm text-slate-500">Save ahead for irregular expenses by dripping money in monthly.</p>
         <form class="space-y-4" @submit.prevent="saveGoal">
           <div>
             <label class="mb-1 block text-sm font-medium">Type</label>

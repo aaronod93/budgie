@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TransactionResource;
 use App\Models\Budget;
 use App\Models\Transaction;
+use App\Services\RecordActivity;
 use App\Services\RecordTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -68,9 +69,20 @@ class TransactionController extends Controller
         $data = $this->validatePayload($request, creating: true);
 
         $transaction = $recorder->create($budget, $this->resolveIds($budget, $data));
+        $transaction->load(self::EAGER);
 
-        return (new TransactionResource($transaction->load(self::EAGER)))
-            ->response()->setStatusCode(201);
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'transaction.created',
+            sprintf('Added %s transaction%s in %s',
+                self::dollars($transaction->amount),
+                $transaction->payee ? " for {$transaction->payee->name}" : '',
+                $transaction->account->name),
+            $transaction->uuid,
+        );
+
+        return (new TransactionResource($transaction))->response()->setStatusCode(201);
     }
 
     public function show(Budget $budget, Transaction $transaction)
@@ -87,17 +99,39 @@ class TransactionController extends Controller
         $data = $this->validatePayload($request, creating: false);
 
         $transaction = $recorder->update($transaction, $this->resolveIds($budget, $data));
+        $transaction->load(self::EAGER);
 
-        return new TransactionResource($transaction->load(self::EAGER));
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'transaction.updated',
+            sprintf('Edited a transaction in %s (%s)',
+                $transaction->account->name,
+                self::dollars($transaction->amount)),
+            $transaction->uuid,
+        );
+
+        return new TransactionResource($transaction);
     }
 
     public function destroy(Request $request, Budget $budget, Transaction $transaction, RecordTransaction $recorder)
     {
         Gate::authorize('update', $budget);
 
+        $description = sprintf('Deleted a %s transaction from %s',
+            self::dollars($transaction->amount),
+            $transaction->account->name);
+
         $recorder->delete($transaction, $request->boolean('force'));
 
+        app(RecordActivity::class)($budget, $request->user(), 'transaction.deleted', $description, $transaction->uuid);
+
         return response()->noContent();
+    }
+
+    public static function dollars(int $cents): string
+    {
+        return ($cents < 0 ? '-$' : '$').number_format(abs($cents) / 100, 2);
     }
 
     private function validatePayload(Request $request, bool $creating): array

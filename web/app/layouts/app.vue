@@ -1,12 +1,38 @@
 <script setup lang="ts">
+import type Echo from 'laravel-echo'
+
+type EchoClient = Echo<'reverb'>
+
 const auth = useAuthStore()
 const store = useBudgetStore()
+const { $echo } = useNuxtApp()
 
 const showAddAccount = ref(false)
 const accountForm = reactive({ name: '', type: 'checking', balance: '' })
 const accountError = ref('')
 
-onMounted(() => store.init())
+onMounted(async () => {
+  await store.init()
+  store.loadInvitations().catch(() => {})
+})
+
+// Live refresh: follow the private channel of whichever budget is open.
+let subscribedTo: string | null = null
+watch(() => store.current?.uuid, (uuid) => {
+  const echo = $echo as EchoClient | undefined
+  if (!echo) return
+  if (subscribedTo) echo.leave(`budget.${subscribedTo}`)
+  subscribedTo = uuid ?? null
+  if (!uuid) return
+  echo.private(`budget.${uuid}`).listen('.activity', (entry: { description: string, user: string | null }) => {
+    const isSomeoneElse = entry.user && entry.user !== auth.user?.name
+    store.refreshFromLive(isSomeoneElse ? `${entry.user}: ${entry.description}` : null)
+  })
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (subscribedTo) (($echo as EchoClient | undefined))?.leave(`budget.${subscribedTo}`)
+})
 
 const onBudgetAccounts = computed(() => store.accounts.filter(a => a.on_budget && !a.closed))
 const trackingAccounts = computed(() => store.accounts.filter(a => !a.on_budget && !a.closed))
@@ -38,7 +64,7 @@ async function logout() {
   <div class="flex min-h-screen">
     <aside class="flex w-64 shrink-0 flex-col bg-emerald-900 text-emerald-50">
       <div class="px-4 py-5">
-        <h1 class="text-xl font-bold">Budgie</h1>
+        <h1 class="text-xl font-bold">Lil' Budgie</h1>
         <p class="truncate text-sm text-emerald-300">{{ store.current?.name }}</p>
       </div>
 
@@ -63,6 +89,13 @@ async function logout() {
           active-class="bg-emerald-800"
         >
           Payees
+        </NuxtLink>
+        <NuxtLink
+          to="/sharing"
+          class="block rounded-md px-3 py-2 font-medium hover:bg-emerald-800"
+          active-class="bg-emerald-800"
+        >
+          Sharing
         </NuxtLink>
       </nav>
 
@@ -112,7 +145,43 @@ async function logout() {
     </aside>
 
     <main class="min-w-0 flex-1 bg-slate-50">
+      <div
+        v-for="invitation in store.invitations"
+        :key="invitation.uuid"
+        class="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200 bg-sky-50 px-6 py-3 text-sm text-sky-900"
+      >
+        <span>
+          <strong>{{ invitation.invited_by }}</strong> invited you to share
+          <strong>{{ invitation.budget_name }}</strong> as {{ invitation.role }}.
+        </span>
+        <span class="flex gap-2">
+          <button
+            class="rounded-md bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-700"
+            @click="store.acceptInvitation(invitation.uuid)"
+          >Accept</button>
+          <button
+            class="rounded-md border border-sky-300 px-3 py-1 hover:bg-sky-100"
+            @click="store.declineInvitation(invitation.uuid)"
+          >Decline</button>
+        </span>
+      </div>
+
       <slot />
+
+      <!-- Live activity toast (another device/user changed the budget) -->
+      <Transition
+        enter-active-class="transition duration-200"
+        enter-from-class="translate-y-2 opacity-0"
+        leave-active-class="transition duration-300"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="store.liveMessage"
+          class="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg bg-slate-900 px-4 py-3 text-sm text-white shadow-lg"
+        >
+          {{ store.liveMessage }}
+        </div>
+      </Transition>
     </main>
 
     <!-- Add account modal -->

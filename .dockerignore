@@ -1,0 +1,21 @@
+# Keep build contexts small and secrets out of images.
+.git
+.github
+docs
+mobile
+scripts
+
+# Never bake local env files into images (runtime env_file provides config).
+**/.env
+**/.env.*
+!**/.env.example
+
+api/vendor
+api/node_modules
+api/storage/logs
+api/tests
+
+web/node_modules
+web/.nuxt
+web/.output
+web/dist

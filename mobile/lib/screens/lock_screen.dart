@@ -32,7 +32,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
             children: [
               Icon(Icons.lock_outline, size: 64, color: Colors.green.shade800),
               const SizedBox(height: 16),
-              Text('Budgie is locked',
+              Text("Lil' Budgie is locked",
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 24),
               FilledButton.icon(

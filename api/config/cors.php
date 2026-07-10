@@ -28,6 +28,7 @@ return [
         'user/*',
         'email/*',
         'auth/*',
+        'broadcasting/auth',
     ],
 
     'allowed_methods' => ['*'],

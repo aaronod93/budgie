@@ -5,6 +5,11 @@ export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2026-07-10',
   devtools: { enabled: true },
+  app: {
+    head: {
+      title: "Lil' Budgie",
+    },
+  },
   modules: ['@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   vite: {
@@ -13,6 +18,14 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: 'http://localhost:8000',
+      // Reverb websockets (live multi-device refresh); empty key disables.
+      // In production the websocket rides the API domain over TLS (Caddy
+      // proxies /app/* to the reverb container): host=api domain, port=443,
+      // scheme=https.
+      reverbKey: 'budgie-local-key',
+      reverbHost: 'localhost',
+      reverbPort: 8080,
+      reverbScheme: 'http',
     },
   },
 })

@@ -7,6 +7,7 @@ use App\Models\Budget;
 use App\Models\Category;
 use App\Services\AssignMoney;
 use App\Services\MonthService;
+use App\Services\RecordActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -33,6 +34,14 @@ class AssignController extends Controller
         $parsed = MonthController::parseMonth($month);
 
         $assign($budget, $parsed, $category, $data['amount']);
+
+        app(RecordActivity::class)(
+            $budget,
+            $request->user(),
+            'budget.assigned',
+            sprintf('Assigned %s to %s in %s', TransactionController::dollars($data['amount']), $category->name, $month),
+            $category->uuid,
+        );
 
         return response()->json($months->compute($budget, $parsed));
     }

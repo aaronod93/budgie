@@ -1,7 +1,8 @@
-# Budgie
+# Lil' Budgie
 
-Envelope budgeting (YNAB-style): give every dollar a job, spend from envelopes, roll with
-the punches. See [PLAN.md](PLAN.md) for the full architecture and roadmap.
+Envelope budgeting: assign every dollar to an envelope, spend against envelope
+balances, and rebalance when plans change. See [PLAN.md](PLAN.md) for the full
+architecture and roadmap.
 
 | App | Stack | Path |
 |---|---|---|
@@ -28,6 +29,10 @@ php artisan serve
 cd web
 npm install
 npm run dev
+
+# 4. (Optional) Live multi-device updates — Reverb websockets on :8080
+cd api
+php artisan reverb:start
 ```
 
 Register an account at http://localhost:3000/register and you're in.
@@ -45,6 +50,12 @@ cd api && vendor/bin/pest && vendor/bin/pint --test   # API tests + style
 cd web && npm run typecheck                           # Nuxt type safety
 cd mobile && flutter analyze && flutter test          # Mobile static + unit
 ```
+
+## Deployment
+
+Production runs from [docker-compose.prod.yml](docker-compose.prod.yml) on the same
+VPS as StaceLib, behind StaceLib's Caddy (hostname routing over a shared docker
+network — no ports published by this stack). Full runbook: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Auth notes
 

@@ -13,9 +13,10 @@ class BudgetController extends Controller
 {
     public function index(Request $request)
     {
-        return BudgetResource::collection(
-            $request->user()->budgets()->orderBy('created_at')->get(),
-        );
+        $owned = $request->user()->budgets()->orderBy('created_at')->get();
+        $shared = $request->user()->sharedBudgets()->orderBy('created_at')->get();
+
+        return BudgetResource::collection($owned->concat($shared));
     }
 
     public function store(Request $request, CreateBudget $createBudget)

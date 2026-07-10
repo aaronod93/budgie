@@ -13,6 +13,7 @@ class BudgetResource extends JsonResource
             'uuid' => $this->uuid,
             'name' => $this->name,
             'currency' => $this->currency,
+            'role' => $request->user() ? $this->roleOf($request->user()) : null,
             'ready_to_assign_category_uuid' => $this->categories()
                 ->where('internal_type', 'ready_to_assign')
                 ->value('uuid'),

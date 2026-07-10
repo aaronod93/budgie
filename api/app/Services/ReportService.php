@@ -128,7 +128,7 @@ class ReportService
     }
 
     /**
-     * Rule 4 — Age of Money: FIFO-match cash outflows against cash inflows;
+     * Age of Money: FIFO-match cash outflows against cash inflows;
      * the age of an outflow is how old the money that finished paying for it
      * was. Returns the average of the last 10 outflows in days, or null.
      */

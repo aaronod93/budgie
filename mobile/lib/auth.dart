@@ -106,7 +106,7 @@ class AuthController extends Notifier<AuthState> {
       data: {
         'email': email,
         'password': password,
-        'device_name': 'Budgie ${Platform.operatingSystem}',
+        'device_name': "Lil' Budgie ${Platform.operatingSystem}",
         if (code != null && code.isNotEmpty) 'code': code,
       },
       options: Options(headers: {'Accept': 'application/json'}),

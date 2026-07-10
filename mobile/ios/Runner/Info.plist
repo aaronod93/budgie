@@ -7,9 +7,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Budgie</string>
+	<string>Lil&#8217; Budgie</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Budgie uses Face ID to unlock your budget.</string>
+	<string>Lil&#8217; Budgie uses Face ID to unlock your budget.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
