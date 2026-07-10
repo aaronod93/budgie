@@ -55,6 +55,37 @@ test('cleared balance only counts cleared transactions', function () {
         ->assertJsonPath('data.cleared_balance', 10000);
 });
 
+test('an account must be emptied before closing, then can close and reopen', function () {
+    $budget = budgetFor(login());
+    $checking = $this->postJson("/api/v1/budgets/{$budget->uuid}/accounts", [
+        'name' => 'Checking', 'type' => 'checking', 'balance' => 100000,
+    ])->json('data');
+    $savings = $this->postJson("/api/v1/budgets/{$budget->uuid}/accounts", [
+        'name' => 'Savings', 'type' => 'savings',
+    ])->json('data');
+
+    // Non-zero balance: refused.
+    $this->patchJson("/api/v1/budgets/{$budget->uuid}/accounts/{$checking['uuid']}", ['closed' => true])
+        ->assertUnprocessable();
+
+    // Empty it, then close.
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+        'account_id' => $checking['uuid'], 'date' => now()->toDateString(),
+        'amount' => -100000, 'transfer_account_id' => $savings['uuid'],
+    ]);
+    $this->patchJson("/api/v1/budgets/{$budget->uuid}/accounts/{$checking['uuid']}", ['closed' => true])
+        ->assertOk()->assertJsonPath('data.closed', true);
+
+    // History survives; budget totals are untouched by closing.
+    $month = now()->format('Y-m');
+    $this->getJson("/api/v1/budgets/{$budget->uuid}/months/$month")
+        ->assertJsonPath('ready_to_assign', 100000);
+
+    // Reopen.
+    $this->patchJson("/api/v1/budgets/{$budget->uuid}/accounts/{$checking['uuid']}", ['closed' => false])
+        ->assertOk()->assertJsonPath('data.closed', false);
+});
+
 test('deleting an account removes its money, schedules and transfer payee', function () {
     $budget = budgetFor(login());
 

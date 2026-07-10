@@ -11,6 +11,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@web.awesome.me/webawesome-pro": "^3.10.0",
     "@fontsource-variable/work-sans": "^5.2.8",
     "@pinia/nuxt": "^0.11.2",
     "laravel-echo": "^2.3.7",

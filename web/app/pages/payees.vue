@@ -4,6 +4,7 @@ definePageMeta({ middleware: 'auth', layout: 'app' })
 interface PayeeRow {
   uuid: string
   name: string
+  icon: string | null
   transfer_account_uuid: string | null
   default_category: { uuid: string, name: string } | null
 }
@@ -38,6 +39,15 @@ async function rename(payee: PayeeRow) {
   await run(() => apiFetch(`${store.base}/payees/${payee.uuid}`, {
     method: 'PATCH',
     body: { name: renameValue.value.trim() },
+  }))
+}
+
+async function setIcon(payee: PayeeRow, icon: string) {
+  const trimmed = icon.trim()
+  if (trimmed === (payee.icon ?? '')) return
+  await run(() => apiFetch(`/payees/`, {
+    method: 'PATCH',
+    body: { icon: trimmed || null },
   }))
 }
 
@@ -82,15 +92,26 @@ async function run(action: () => Promise<unknown>) {
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
+            <th class="w-14 px-4 py-3" title="Icon">Icon</th>
             <th class="px-4 py-3">Payee</th>
             <th class="w-64 px-4 py-3">Default category</th>
             <th class="w-20 px-4 py-3" />
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="3" class="px-4 py-6 text-center text-mist-700">Loading…</td></tr>
-          <tr v-else-if="regular.length === 0"><td colspan="3" class="px-4 py-6 text-center text-mist-700">No payees yet.</td></tr>
+          <tr v-if="loading"><td colspan="4" class="px-4 py-6 text-center text-mist-700">Loading…</td></tr>
+          <tr v-else-if="regular.length === 0"><td colspan="4" class="px-4 py-6 text-center text-mist-700">No payees yet.</td></tr>
           <tr v-for="payee in regular" :key="payee.uuid" class="border-b border-paper-300 hover:bg-paper-100">
+            <td class="px-4 py-2">
+              <input
+                :value="payee.icon ?? ''"
+                placeholder="🙂"
+                maxlength="8"
+                title="Emoji icon (Win + . opens the picker)"
+                class="w-10 rounded-md border border-paper-400 bg-paper-50 px-1 py-0.5 text-center"
+                @change="setIcon(payee, ($event.target as HTMLInputElement).value)"
+              >
+            </td>
             <td class="px-4 py-2">
               <input
                 v-if="renaming === payee.uuid"
@@ -106,18 +127,19 @@ async function run(action: () => Promise<unknown>) {
               </button>
             </td>
             <td class="px-4 py-2">
-              <select
+              <wa-select
+                size="small"
+                class="w-full"
                 :value="payee.default_category?.uuid ?? 'none'"
-                class="w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1 text-sm"
-                @change="setDefaultCategory(payee, ($event.target as HTMLSelectElement).value)"
+                @change="setDefaultCategory(payee, String(($event.target as HTMLSelectElement).value || 'none'))"
               >
-                <option value="none">—</option>
-                <optgroup v-for="group in store.groups" :key="group.uuid" :label="group.name">
-                  <option v-for="category in group.categories" :key="category.uuid" :value="category.uuid">
-                    {{ category.name }}
-                  </option>
-                </optgroup>
-              </select>
+                <wa-option value="none">—</wa-option>
+                <template v-for="group in store.groups" :key="group.uuid">
+                  <wa-option v-for="category in group.categories" :key="category.uuid" :value="category.uuid">
+                    {{ category.icon ? category.icon + ' ' : '' }}{{ group.name }} · {{ category.name }}
+                  </wa-option>
+                </template>
+              </wa-select>
             </td>
             <td class="px-4 py-2 text-right">
               <button
@@ -140,16 +162,21 @@ async function run(action: () => Promise<unknown>) {
           All of its transactions move to the payee you choose, and "{{ merging.name }}" is removed.
         </p>
         <form class="space-y-4" @submit.prevent="submitMerge">
-          <select v-model="mergeInto" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
-            <option value="" disabled>Merge into…</option>
-            <option
+          <wa-select
+            class="w-full"
+            placeholder="Merge into…"
+            required
+            :value="mergeInto"
+            @change="mergeInto = String(($event.target as HTMLSelectElement).value || '')"
+          >
+            <wa-option
               v-for="payee in regular.filter(p => p.uuid !== merging?.uuid)"
               :key="payee.uuid"
               :value="payee.uuid"
             >
-              {{ payee.name }}
-            </option>
-          </select>
+              {{ payee.icon ? payee.icon + ' ' : '' }}{{ payee.name }}
+            </wa-option>
+          </wa-select>
           <div class="flex justify-end gap-2">
             <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="merging = null">Cancel</button>
             <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Merge</button>

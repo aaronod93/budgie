@@ -28,6 +28,7 @@ export interface Account {
 export interface CategoryRef {
   uuid: string
   name: string
+  icon: string | null
   hidden: boolean
 }
 
@@ -49,6 +50,7 @@ export interface CategoryTarget {
 export interface MonthCategory {
   uuid: string
   name: string
+  icon: string | null
   is_credit_card_payment: boolean
   assigned: number
   activity: number
@@ -206,7 +208,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
   async function updateCategory(
     uuid: string,
-    body: { name?: string, hidden?: boolean, group_id?: string },
+    body: { name?: string, icon?: string | null, hidden?: boolean, group_id?: string },
   ): Promise<void> {
     await apiFetch(`${base.value}/categories/${uuid}`, { method: 'PATCH', body })
     await Promise.all([loadGroups(), loadMonth()])

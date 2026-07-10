@@ -77,6 +77,12 @@ async function moveCategory(group: CategoryGroupFull, category: CategoryRef, del
   await run(() => store.reorderCategories(group.uuid, order))
 }
 
+async function setIcon(category: CategoryRef, icon: string) {
+  const trimmed = icon.trim()
+  if (trimmed === (category.icon ?? '')) return
+  await run(() => store.updateCategory(category.uuid, { icon: trimmed || null }))
+}
+
 async function moveToGroup(category: CategoryRef, groupUuid: string) {
   await run(() => store.updateCategory(category.uuid, { group_id: groupUuid }))
 }
@@ -153,6 +159,14 @@ const migrateOptions = computed(() =>
         :class="{ 'opacity-50': category.hidden }"
       >
         <input
+          :value="category.icon ?? ''"
+          placeholder="🙂"
+          maxlength="8"
+          title="Emoji icon (Win + . opens the picker)"
+          class="w-9 rounded border border-paper-400 bg-paper-50 px-1 py-0.5 text-center text-sm"
+          @change="setIcon(category, ($event.target as HTMLInputElement).value)"
+        >
+        <input
           v-if="renamingCategory === category.uuid"
           v-model="renameValue"
           class="rounded border border-accent-400 bg-paper-50 px-2 py-0.5 text-sm"
@@ -165,14 +179,14 @@ const migrateOptions = computed(() =>
           {{ category.name }}<span v-if="category.hidden" class="ml-1 text-xs text-mist-700">(hidden)</span>
         </button>
         <span class="flex-1" />
-        <select
-          class="rounded-md border border-paper-400 bg-paper-50 px-1.5 py-0.5 text-xs"
+        <wa-select
+          size="small"
           title="Move to group"
           :value="group.uuid"
-          @change="moveToGroup(category, ($event.target as HTMLSelectElement).value)"
+          @change="moveToGroup(category, String(($event.target as HTMLSelectElement).value || group.uuid))"
         >
-          <option v-for="g in store.groups" :key="g.uuid" :value="g.uuid">{{ g.name }}</option>
-        </select>
+          <wa-option v-for="g in store.groups" :key="g.uuid" :value="g.uuid">{{ g.name }}</wa-option>
+        </wa-select>
         <button
           class="rounded px-1.5 text-xs text-mist-700 hover:bg-paper-100"
           :title="category.hidden ? 'Unhide' : 'Hide'"
@@ -223,12 +237,17 @@ const migrateOptions = computed(() =>
           and money should move — nothing is lost.
         </p>
         <form class="space-y-4" @submit.prevent="confirmMigrate">
-          <select v-model="migrateTo" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
-            <option value="" disabled>Move everything to…</option>
-            <option v-for="option in migrateOptions" :key="option.uuid" :value="option.uuid">
+          <wa-select
+            class="w-full"
+            placeholder="Move everything to…"
+            required
+            :value="migrateTo"
+            @change="migrateTo = String(($event.target as HTMLSelectElement).value || '')"
+          >
+            <wa-option v-for="option in migrateOptions" :key="option.uuid" :value="option.uuid">
               {{ option.label }}
-            </option>
-          </select>
+            </wa-option>
+          </wa-select>
           <div class="flex justify-end gap-2">
             <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="migrating = null">Cancel</button>
             <button type="submit" class="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">

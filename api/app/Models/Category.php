@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'hidden', 'sort_order', 'category_group_id'])]
+#[Fillable(['name', 'icon', 'hidden', 'sort_order', 'category_group_id'])]
 class Category extends Model
 {
     use HasFactory, HasUuid, SoftDeletes;

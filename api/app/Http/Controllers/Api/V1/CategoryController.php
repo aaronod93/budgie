@@ -23,6 +23,7 @@ class CategoryController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:16'],
             'group_id' => ['required', 'uuid'],
         ]);
 
@@ -30,6 +31,7 @@ class CategoryController extends Controller
 
         $category = $budget->categories()->create([
             'name' => $data['name'],
+            'icon' => $data['icon'] ?? null,
             'category_group_id' => $group->id,
             'sort_order' => ($group->categories()->max('sort_order') ?? -1) + 1,
         ]);
@@ -50,6 +52,7 @@ class CategoryController extends Controller
 
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:16'],
             'hidden' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'group_id' => ['sometimes', 'uuid'],

@@ -38,3 +38,28 @@
   --color-mist-500: #6f93a8;
   --color-mist-700: #4c6b7e;
 }
+
+/*
+ * Web Awesome bridge: map its theme tokens onto the Lil' Budgie palette so
+ * wa-* components match the app without per-component styling.
+ */
+:root,
+:host {
+  --wa-font-family-body: "Work Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --wa-font-family-heading: "Work Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --wa-color-brand-fill-loud: #e3854e;
+  --wa-color-brand-fill-normal: #f8e3d4;
+  --wa-color-brand-fill-quiet: #f8e3d4;
+  --wa-color-brand-on-loud: #131722;
+  --wa-color-brand-border-loud: #d06f36;
+  --wa-color-brand-border-normal: #e3854e;
+
+  /* Form controls sit on paper cards. */
+  --wa-form-control-background-color: #f4f3f0;
+  --wa-form-control-border-color: #b9b6ac;
+  --wa-form-control-activated-color: #e3854e;
+  --wa-color-surface-default: #e7e6e2;
+  --wa-color-surface-raised: #f4f3f0;
+  --wa-color-surface-border: #b9b6ac;
+}

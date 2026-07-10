@@ -52,6 +52,7 @@ class PayeeController extends Controller
 
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:16'],
             'default_category_id' => ['sometimes', 'nullable', 'uuid'],
         ]);
 

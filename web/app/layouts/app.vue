@@ -36,6 +36,7 @@ onUnmounted(() => {
 
 const onBudgetAccounts = computed(() => store.accounts.filter(a => a.on_budget && !a.closed))
 const trackingAccounts = computed(() => store.accounts.filter(a => !a.on_budget && !a.closed))
+const closedAccounts = computed(() => store.accounts.filter(a => a.closed))
 
 async function submitAccount() {
   accountError.value = ''
@@ -128,6 +129,19 @@ async function logout() {
           </NuxtLink>
         </template>
 
+        <template v-if="closedAccounts.length">
+          <p class="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-mist-500">Closed</p>
+          <NuxtLink
+            v-for="account in closedAccounts"
+            :key="account.uuid"
+            :to="`/accounts/${account.uuid}`"
+            class="mt-1 block truncate rounded-md px-3 py-1 text-xs text-mist-500 hover:bg-ink-700 hover:text-mist-300"
+            active-class="bg-ink-700"
+          >
+            {{ account.name }}
+          </NuxtLink>
+        </template>
+
         <button
           class="mt-3 w-full rounded-md border border-ink-600 px-3 py-1.5 text-sm text-mist-200 hover:bg-ink-700"
           @click="showAddAccount = true"
@@ -195,13 +209,17 @@ async function logout() {
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Type</label>
-            <select v-model="accountForm.type" class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
-              <option value="checking">Checking</option>
-              <option value="savings">Savings</option>
-              <option value="cash">Cash</option>
-              <option value="credit">Credit card</option>
-              <option value="tracking">Tracking (off budget)</option>
-            </select>
+            <wa-select
+              class="w-full"
+              :value="accountForm.type"
+              @change="accountForm.type = String(($event.target as HTMLSelectElement).value || 'checking')"
+            >
+              <wa-option value="checking">Checking</wa-option>
+              <wa-option value="savings">Savings</wa-option>
+              <wa-option value="cash">Cash</wa-option>
+              <wa-option value="credit">Credit card</wa-option>
+              <wa-option value="tracking">Tracking (off budget)</wa-option>
+            </wa-select>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Current balance</label>

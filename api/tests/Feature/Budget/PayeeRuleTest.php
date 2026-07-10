@@ -40,6 +40,25 @@ test('a payee default category auto-categorises new transactions', function () {
     ])->assertCreated()->assertJsonPath('data.category', null);
 });
 
+test('payees can carry a unicode icon that flows into transactions', function () {
+    [$budget, $account] = payeeSetup($this);
+
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+        'account_id' => $account['uuid'], 'date' => '2026-07-01', 'amount' => -4000,
+        'payee_name' => 'Aldi',
+    ]);
+
+    $payee = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'))
+        ->firstWhere('name', 'Aldi');
+
+    $this->patchJson("/api/v1/budgets/{$budget->uuid}/payees/{$payee['uuid']}", ['icon' => '🛒'])
+        ->assertOk()->assertJsonPath('data.icon', '🛒');
+
+    $rows = $this->getJson("/api/v1/budgets/{$budget->uuid}/transactions")->json('data');
+    $aldiRow = collect($rows)->first(fn ($r) => ($r['payee']['name'] ?? '') === 'Aldi');
+    expect($aldiRow['payee']['icon'])->toBe('🛒');
+});
+
 test('payees remember their last category and flow direction', function () {
     [$budget, $account] = payeeSetup($this);
     $groceries = $budget->categories()->where('name', 'Groceries')->first();

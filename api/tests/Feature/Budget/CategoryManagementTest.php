@@ -40,6 +40,27 @@ test('groups and categories can be created and appear on the budget screen', fun
         ->and(monthRow($month, 'Vet Bills'))->not->toBeNull();
 });
 
+test('categories can carry a unicode icon end to end', function () {
+    [$budget] = managementSetup($this);
+
+    $groups = $this->getJson("/api/v1/budgets/{$budget->uuid}/category-groups")->json('data');
+    $bills = collect($groups)->firstWhere('name', 'Bills');
+
+    // Create with an icon, update another category's icon.
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/categories", [
+        'name' => 'Mortgage', 'icon' => '🏠', 'group_id' => $bills['uuid'],
+    ])->assertCreated()->assertJsonPath('data.icon', '🏠');
+
+    $phone = collect($bills['categories'])->firstWhere('name', 'Phone');
+    $this->patchJson("/api/v1/budgets/{$budget->uuid}/categories/{$phone['uuid']}", ['icon' => '📱'])
+        ->assertOk()->assertJsonPath('data.icon', '📱');
+
+    // Icons flow through to the budget screen payload.
+    $month = $this->getJson("/api/v1/budgets/{$budget->uuid}/months/2026-07")->json();
+    expect(monthRow($month, 'Mortgage')['icon'])->toBe('🏠')
+        ->and(monthRow($month, 'Phone')['icon'])->toBe('📱');
+});
+
 test('groups and categories can be renamed and reordered', function () {
     [$budget] = managementSetup($this);
 

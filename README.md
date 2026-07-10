@@ -27,6 +27,10 @@ php artisan serve
 
 # 3. Web — http://localhost:3000
 cd web
+# Web Awesome Pro installs from a private registry; npm reads the token from
+# the environment (npm does NOT read .env files). Set it from web/.env first:
+#   PowerShell: $env:WEBAWESOME_NPM_TOKEN = (Get-Content .env | Select-String 'WEBAWESOME_NPM_TOKEN=').ToString().Split('=')[1]
+#   bash:       export WEBAWESOME_NPM_TOKEN=$(grep WEBAWESOME_NPM_TOKEN .env | cut -d= -f2)
 npm install
 npm run dev
 

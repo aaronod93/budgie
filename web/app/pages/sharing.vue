@@ -119,15 +119,15 @@ function timeAgo(iso: string): string {
           <p class="text-xs text-mist-700">{{ member.email }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <select
+          <wa-select
             v-if="isOwner && member.role !== 'owner'"
+            size="small"
             :value="member.role"
-            class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1 text-sm"
-            @change="changeRole(member, ($event.target as HTMLSelectElement).value)"
+            @change="changeRole(member, String(($event.target as HTMLSelectElement).value || member.role))"
           >
-            <option value="editor">Editor</option>
-            <option value="viewer">Viewer</option>
-          </select>
+            <wa-option value="editor">Editor</wa-option>
+            <wa-option value="viewer">Viewer</wa-option>
+          </wa-select>
           <span v-else class="rounded-full bg-paper-100 px-2.5 py-0.5 text-xs font-medium capitalize text-ink-600">
             {{ member.role }}
           </span>
@@ -153,10 +153,13 @@ function timeAgo(iso: string): string {
           placeholder="partner@example.com"
           class="min-w-56 flex-1 rounded-md border border-paper-400 bg-paper-50 px-3 py-2 text-sm"
         >
-        <select v-model="inviteForm.role" class="rounded-md border border-paper-400 bg-paper-50 px-3 py-2 text-sm">
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
+        <wa-select
+          :value="inviteForm.role"
+          @change="inviteForm.role = String(($event.target as HTMLSelectElement).value || 'editor')"
+        >
+          <wa-option value="editor">Editor</wa-option>
+          <wa-option value="viewer">Viewer</wa-option>
+        </wa-select>
         <button
           type="submit"
           :disabled="inviteBusy"

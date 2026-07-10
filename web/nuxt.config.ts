@@ -5,6 +5,12 @@ export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2026-07-10',
   devtools: { enabled: true },
+  vue: {
+    compilerOptions: {
+      // Web Awesome components are custom elements, not Vue components.
+      isCustomElement: tag => tag.startsWith('wa-'),
+    },
+  },
   app: {
     head: {
       title: "Lil' Budgie",

@@ -9,8 +9,8 @@ interface Txn {
   memo: string | null
   cleared: 'uncleared' | 'cleared' | 'reconciled'
   approved: boolean
-  payee: { uuid: string, name: string } | null
-  category: { uuid: string, name: string } | null
+  payee: { uuid: string, name: string, icon: string | null } | null
+  category: { uuid: string, name: string, icon: string | null } | null
   transfer_account_uuid: string | null
   splits: { uuid: string, amount: number, category_uuid: string | null, memo: string | null }[]
 }
@@ -21,14 +21,15 @@ interface Scheduled {
   next_date: string
   amount: number
   memo: string | null
-  payee: { uuid: string, name: string } | null
-  category: { uuid: string, name: string } | null
+  payee: { uuid: string, name: string, icon: string | null } | null
+  category: { uuid: string, name: string, icon: string | null } | null
   transfer_account_uuid: string | null
 }
 
 interface PayeeOption {
   uuid: string
   name: string
+  icon: string | null
   transfer_account_uuid: string | null
   default_category: { uuid: string, name: string } | null
   last_category_uuid: string | null
@@ -41,7 +42,6 @@ const store = useBudgetStore()
 const transactions = ref<Txn[]>([])
 const schedules = ref<Scheduled[]>([])
 const payees = ref<PayeeOption[]>([])
-const payeeDropdownOpen = ref(false)
 const outflowInput = ref<HTMLInputElement | null>(null)
 const inflowInput = ref<HTMLInputElement | null>(null)
 const loadingRows = ref(false)
@@ -106,17 +106,22 @@ async function load() {
 
 // --- Payee memory: pick a payee, get its last category + usual flow ---
 
-const payeeSuggestions = computed(() => {
-  const query = form.payee.trim().toLowerCase()
-  return payees.value
-    .filter(p => !p.transfer_account_uuid)
-    .filter(p => !query || p.name.toLowerCase().includes(query))
-    .slice(0, 8)
-})
+const savedPayees = computed(() => payees.value.filter(p => !p.transfer_account_uuid))
+
+/** Combobox options carry payee UUIDs (option values cannot contain spaces);
+ *  free-typed new payee names arrive as custom values. */
+function onPayeeChange(event: Event) {
+  const value = String((event.target as HTMLInputElement).value ?? '')
+  const match = savedPayees.value.find(p => p.uuid === value)
+  if (!match) {
+    form.payee = value
+    return
+  }
+  selectPayee(match)
+}
 
 function selectPayee(payee: PayeeOption) {
   form.payee = payee.name
-  payeeDropdownOpen.value = false
   if (editingUuid.value) return
 
   // Pre-select the last-used category (falling back to the payee default).
@@ -151,6 +156,30 @@ function categoryLabel(name: string, uuid: string): string {
     : `${name}  (${formatMoney(available, store.current?.currency)})`
 }
 
+/** Flat, searchable option list: special entries, then icon + group + category
+ *  + available balance, then transfers (values contain no spaces). */
+const categoryOptions = computed(() => {
+  const options: { value: string, label: string }[] = [
+    { value: 'none', label: 'No category' },
+    { value: 'rta', label: 'Inflow: Ready to Assign' },
+  ]
+  for (const group of store.groups) {
+    for (const category of group.categories.filter(c => !c.hidden)) {
+      const icon = category.icon ? `${category.icon} ` : ''
+      options.push({
+        value: category.uuid,
+        label: `${icon}${group.name} · ${categoryLabel(category.name, category.uuid)}`,
+      })
+    }
+  }
+  if (!editingUuid.value) {
+    for (const acc of otherAccounts.value) {
+      options.push({ value: `transfer:${acc.uuid}`, label: `Transfer : ${acc.name}` })
+    }
+  }
+  return options
+})
+
 async function approveAll() {
   await apiFetch(`${store.base}/transactions-approve-all`, {
     method: 'POST',
@@ -161,7 +190,8 @@ async function approveAll() {
 
 function rowLabel(txn: Txn): string {
   if (txn.splits.length > 0) return `Split (${txn.splits.length} categories)`
-  return txn.category?.name ?? (txn.transfer_account_uuid ? 'Transfer' : 'Uncategorised')
+  if (txn.category) return (txn.category.icon ? txn.category.icon + ' ' : '') + txn.category.name
+  return txn.transfer_account_uuid ? 'Transfer' : 'Uncategorised'
 }
 
 function startEdit(txn: Txn) {
@@ -273,6 +303,28 @@ async function toggleCleared(txn: Txn) {
   await store.loadAccounts()
 }
 
+async function closeAccount() {
+  if ((account.value?.balance ?? 0) !== 0) {
+    error.value = 'Transfer the remaining balance out before closing this account.'
+    return
+  }
+  if (!confirm(`Close ${account.value?.name}? Its history stays; you can reopen it any time.`)) return
+  error.value = ''
+  try {
+    await apiFetch(`${store.base}/accounts/${accountUuid.value}`, { method: 'PATCH', body: { closed: true } })
+    await store.loadAccounts()
+    await navigateTo('/budget')
+  } catch (e) {
+    const err = e as { data?: { message?: string } }
+    error.value = err.data?.message ?? 'Could not close the account.'
+  }
+}
+
+async function reopenAccount() {
+  await apiFetch(`${store.base}/accounts/${accountUuid.value}`, { method: 'PATCH', body: { closed: false } })
+  await store.loadAccounts()
+}
+
 async function deleteAccount() {
   if (deleteConfirmText.value !== 'CONFIRMDELETE') return
   deleteBusy.value = true
@@ -302,7 +354,10 @@ async function remove(txn: Txn) {
   <div class="mx-auto max-w-5xl p-6">
     <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-xl font-bold">{{ account?.name ?? 'Account' }}</h1>
+        <h1 class="text-xl font-bold">
+          {{ account?.name ?? 'Account' }}
+          <span v-if="account?.closed" class="ml-2 rounded-full bg-ink-700 px-2 py-0.5 align-middle text-xs font-medium text-mist-300">Closed</span>
+        </h1>
         <p class="text-sm text-mist-300 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
       </div>
       <div class="flex items-center gap-4">
@@ -339,6 +394,20 @@ async function remove(txn: Txn) {
           Reconcile
         </button>
         <button
+          v-if="account?.closed"
+          class="rounded-md border border-accent-400/60 bg-accent-400/10 px-3 py-1.5 text-sm text-accent-300 hover:bg-accent-400/20"
+          @click="reopenAccount"
+        >
+          Reopen account
+        </button>
+        <button
+          v-else
+          class="rounded-md border border-ink-600 px-3 py-1.5 text-sm text-mist-200 hover:bg-ink-700"
+          @click="closeAccount"
+        >
+          Close account
+        </button>
+        <button
           class="rounded-md border border-red-500/50 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10"
           @click="showDeleteAccount = true; deleteConfirmText = ''"
         >
@@ -366,78 +435,58 @@ async function remove(txn: Txn) {
       {{ reconcileMessage }}
     </p>
 
-    <!-- Add / edit form -->
+    <!-- Add / edit form (hidden while the account is closed) -->
     <form
+      v-if="!account?.closed"
       class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-ink-700 bg-paper-200 p-4 text-ink-800 md:grid-cols-8"
       @submit.prevent="submit"
     >
-      <input v-model="form.date" type="date" required class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
-      <div class="relative">
-        <input
-          v-model="form.payee"
-          placeholder="Payee"
-          :disabled="editingTransfer"
-          autocomplete="off"
-          class="w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
-          @focus="payeeDropdownOpen = true"
-          @input="payeeDropdownOpen = true"
-          @blur="payeeDropdownOpen = false"
-          @keydown.esc="payeeDropdownOpen = false"
-        >
-        <div
-          v-if="payeeDropdownOpen && payeeSuggestions.length"
-          class="absolute left-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-md border border-paper-400 bg-paper-50 shadow-lg"
-        >
-          <p class="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wide text-mist-700">Saved payees</p>
-          <button
-            v-for="payee in payeeSuggestions"
-            :key="payee.uuid"
-            type="button"
-            class="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-100"
-            @mousedown.prevent="selectPayee(payee)"
-          >
-            {{ payee.name }}
-          </button>
-        </div>
-      </div>
-      <select
-        v-model="form.category"
+      <wa-date-input
+        size="small"
+        required
+        :value="form.date"
+        @change="form.date = ($event.target as HTMLInputElement).value"
+      />
+      <wa-combobox
+        size="small"
+        placeholder="Payee"
+        allow-custom-value
         :disabled="editingTransfer"
-        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm disabled:bg-paper-300"
+        :value="form.payee"
+        @change="onPayeeChange"
       >
-        <option value="none">No category</option>
-        <option value="rta">Inflow: Ready to Assign</option>
-        <optgroup v-for="group in store.groups" :key="group.uuid" :label="group.name">
-          <option
-            v-for="category in group.categories.filter(c => !c.hidden)"
-            :key="category.uuid"
-            :value="category.uuid"
-          >
-            {{ categoryLabel(category.name, category.uuid) }}
-          </option>
-        </optgroup>
-        <optgroup v-if="!editingUuid && otherAccounts.length" label="Transfer to…">
-          <option v-for="acc in otherAccounts" :key="acc.uuid" :value="`transfer:${acc.uuid}`">
-            Transfer : {{ acc.name }}
-          </option>
-        </optgroup>
-      </select>
+        <wa-option v-for="payee in savedPayees" :key="payee.uuid" :value="payee.uuid">
+          {{ payee.icon ? payee.icon + ' ' : '' }}{{ payee.name }}
+        </wa-option>
+      </wa-combobox>
+      <wa-combobox
+        size="small"
+        placeholder="Category"
+        :disabled="editingTransfer"
+        :value="form.category"
+        @change="form.category = String(($event.target as HTMLInputElement).value || 'none')"
+      >
+        <wa-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </wa-option>
+      </wa-combobox>
       <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
       <input ref="outflowInput" v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
       <input ref="inflowInput" v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
-      <select
+      <wa-select
         v-if="!editingUuid"
-        v-model="form.repeat"
+        size="small"
         title="Repeat"
-        class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm"
+        :value="form.repeat"
+        @change="form.repeat = String(($event.target as HTMLSelectElement).value || 'none')"
       >
-        <option value="none">No repeat</option>
-        <option value="once">Once (scheduled)</option>
-        <option value="weekly">Weekly</option>
-        <option value="fortnightly">Fortnightly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
+        <wa-option value="none">No repeat</wa-option>
+        <wa-option value="once">Once (scheduled)</wa-option>
+        <wa-option value="weekly">Weekly</wa-option>
+        <wa-option value="fortnightly">Fortnightly</wa-option>
+        <wa-option value="monthly">Monthly</wa-option>
+        <wa-option value="yearly">Yearly</wa-option>
+      </wa-select>
       <div class="flex gap-1">
         <button type="submit" class="flex-1 rounded-md bg-accent-400 px-3 py-1.5 text-sm font-medium text-ink-900 hover:bg-accent-500">
           {{ editingUuid ? 'Save' : 'Add' }}
@@ -465,8 +514,8 @@ async function remove(txn: Txn) {
           <tr v-for="scheduled in schedules" :key="scheduled.uuid" class="border-b border-paper-300 last:border-0">
             <td class="w-28 px-3 py-2 text-ink-700">{{ scheduled.next_date }}</td>
             <td class="w-24 px-3 py-2 capitalize text-mist-700">{{ scheduled.frequency }}</td>
-            <td class="px-3 py-2">{{ scheduled.payee?.name ?? (scheduled.transfer_account_uuid ? 'Transfer' : '—') }}</td>
-            <td class="px-3 py-2 text-ink-700">{{ scheduled.category?.name ?? '' }}</td>
+            <td class="px-3 py-2">{{ scheduled.payee?.icon ? scheduled.payee.icon + ' ' : '' }}{{ scheduled.payee?.name ?? (scheduled.transfer_account_uuid ? 'Transfer' : '—') }}</td>
+            <td class="px-3 py-2 text-ink-700">{{ scheduled.category?.icon ? scheduled.category.icon + ' ' : '' }}{{ scheduled.category?.name ?? '' }}</td>
             <td class="w-28 px-3 py-2 text-right font-medium" :class="scheduled.amount < 0 ? 'text-ink-800' : 'text-emerald-700'">
               {{ formatMoney(scheduled.amount, store.current?.currency) }}
             </td>
@@ -520,7 +569,7 @@ async function remove(txn: Txn) {
             </td>
             <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ txn.date }}</td>
             <td class="cursor-pointer px-3 py-2" @click="startEdit(txn)">
-              {{ txn.payee?.name ?? '—' }}
+              {{ txn.payee?.icon ? txn.payee.icon + ' ' : '' }}{{ txn.payee?.name ?? '—' }}
               <span v-if="!txn.approved" class="ml-1 rounded bg-accent-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-900">New</span>
             </td>
             <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ rowLabel(txn) }}</td>

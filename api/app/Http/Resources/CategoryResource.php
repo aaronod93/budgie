@@ -12,6 +12,7 @@ class CategoryResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'name' => $this->name,
+            'icon' => $this->icon,
             'hidden' => $this->hidden,
             'sort_order' => $this->sort_order,
             'group_uuid' => $this->whenLoaded('group', fn () => $this->group->uuid),

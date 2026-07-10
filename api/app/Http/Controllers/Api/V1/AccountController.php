@@ -11,6 +11,7 @@ use App\Services\RecordActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
@@ -68,6 +69,23 @@ class AccountController extends Controller
             'closed' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
+
+        // Closing hides the account but keeps its history in the budget, so
+        // the balance must be zero first — otherwise money would count while
+        // being invisible.
+        if (($data['closed'] ?? false) && ! $account->closed) {
+            $balance = (int) $account->transactions()->sum('amount');
+            if ($balance !== 0) {
+                throw ValidationException::withMessages([
+                    'closed' => 'Transfer the remaining balance out before closing this account.',
+                ]);
+            }
+            app(RecordActivity::class)($budget, $request->user(), 'account.closed',
+                "Closed account {$account->name}", $account->uuid);
+        } elseif (array_key_exists('closed', $data) && ! $data['closed'] && $account->closed) {
+            app(RecordActivity::class)($budget, $request->user(), 'account.reopened',
+                "Reopened account {$account->name}", $account->uuid);
+        }
 
         $account->update($data);
 

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name'])]
+#[Fillable(['name', 'icon'])]
 class Payee extends Model
 {
     use HasFactory, HasUuid, SoftDeletes;

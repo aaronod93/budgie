@@ -229,7 +229,7 @@ async function assignAllUnderfunded() {
             >
               <td class="group px-4 py-2">
                 <div class="flex items-center gap-2">
-                  <span>{{ category.name }}</span>
+                  <span>{{ category.icon ? category.icon + ' ' : '' }}{{ category.name }}</span>
                   <button
                     class="text-paper-400 opacity-0 transition group-hover:opacity-100 hover:text-accent-600"
                     :class="{ 'opacity-100 text-accent-500': category.target }"
@@ -309,11 +309,15 @@ async function assignAllUnderfunded() {
         <form class="space-y-4" @submit.prevent="saveGoal">
           <div>
             <label class="mb-1 block text-sm font-medium">Type</label>
-            <select v-model="goalForm.type" class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
-              <option value="refill_monthly">Refill available up to… (needed for spending)</option>
-              <option value="monthly_builder">Assign each month… (savings builder)</option>
-              <option value="balance_by_date">Reach a balance by a date</option>
-            </select>
+            <wa-select
+              class="w-full"
+              :value="goalForm.type"
+              @change="goalForm.type = String(($event.target as HTMLSelectElement).value || 'refill_monthly')"
+            >
+              <wa-option value="refill_monthly">Refill available up to… (needed for spending)</wa-option>
+              <wa-option value="monthly_builder">Assign each month… (savings builder)</wa-option>
+              <wa-option value="balance_by_date">Reach a balance by a date</wa-option>
+            </wa-select>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Amount</label>
@@ -321,7 +325,12 @@ async function assignAllUnderfunded() {
           </div>
           <div v-if="goalForm.type === 'balance_by_date'">
             <label class="mb-1 block text-sm font-medium">By date</label>
-            <input v-model="goalForm.target_date" type="date" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+            <wa-date-input
+              required
+              class="w-full"
+              :value="goalForm.target_date"
+              @change="goalForm.target_date = ($event.target as HTMLInputElement).value"
+            />
           </div>
           <div class="flex items-center justify-between">
             <button
@@ -353,20 +362,22 @@ async function assignAllUnderfunded() {
         <form class="space-y-4" @submit.prevent="submitMove">
           <div>
             <label class="mb-1 block text-sm font-medium">To</label>
-            <select v-model="moveForm.to" class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
-              <option value="rta">Ready to Assign</option>
+            <wa-select
+              class="w-full"
+              :value="moveForm.to"
+              @change="moveForm.to = String(($event.target as HTMLSelectElement).value || 'rta')"
+            >
+              <wa-option value="rta">Ready to Assign</wa-option>
               <template v-for="group in store.month?.groups" :key="group.uuid">
-                <optgroup :label="group.name">
-                  <option
-                    v-for="category in group.categories.filter(c => c.uuid !== moveTarget?.uuid)"
-                    :key="category.uuid"
-                    :value="category.uuid"
-                  >
-                    {{ category.name }}
-                  </option>
-                </optgroup>
+                <wa-option
+                  v-for="category in group.categories.filter(c => c.uuid !== moveTarget?.uuid)"
+                  :key="category.uuid"
+                  :value="category.uuid"
+                >
+                  {{ category.icon ? category.icon + ' ' : '' }}{{ group.name }} · {{ category.name }}
+                </wa-option>
               </template>
-            </select>
+            </wa-select>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Amount</label>

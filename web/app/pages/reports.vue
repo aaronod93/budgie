@@ -126,10 +126,14 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         <section class="rounded-xl border border-ink-700 bg-paper-200 p-5 text-ink-800">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="font-semibold">Spending by {{ groupBy }}</h2>
-            <select v-model="groupBy" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1 text-sm">
-              <option value="category">Category</option>
-              <option value="payee">Payee</option>
-            </select>
+            <wa-select
+              size="small"
+              :value="groupBy"
+              @change="groupBy = (($event.target as HTMLSelectElement).value === 'payee' ? 'payee' : 'category')"
+            >
+              <wa-option value="category">Category</wa-option>
+              <wa-option value="payee">Payee</wa-option>
+            </wa-select>
           </div>
           <p v-if="topSpending.length === 0" class="py-8 text-center text-sm text-mist-700">No spending in this range.</p>
           <div v-else class="space-y-2.5">

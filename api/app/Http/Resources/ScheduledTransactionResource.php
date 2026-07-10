@@ -19,10 +19,12 @@ class ScheduledTransactionResource extends JsonResource
             'payee' => $this->whenLoaded('payee', fn () => $this->payee ? [
                 'uuid' => $this->payee->uuid,
                 'name' => $this->payee->name,
+                'icon' => $this->payee->icon,
             ] : null),
             'category' => $this->whenLoaded('category', fn () => $this->category ? [
                 'uuid' => $this->category->uuid,
                 'name' => $this->category->name,
+                'icon' => $this->category->icon,
             ] : null),
             'transfer_account_uuid' => $this->whenLoaded('transferAccount', fn () => $this->transferAccount?->uuid),
         ];

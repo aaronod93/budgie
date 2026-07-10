@@ -151,6 +151,7 @@ class MonthService
             $groups[$groupUuid]['categories'][] = [
                 'uuid' => $category->uuid,
                 'name' => $category->name,
+                'icon' => $category->icon,
                 'is_credit_card_payment' => $isPayment,
                 'assigned' => $rowAssigned,
                 'activity' => $isPayment

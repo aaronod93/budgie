@@ -2,7 +2,11 @@
 # NUXT_PUBLIC_* variables are read at RUNTIME, so one image works anywhere.
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY web/package*.json ./
+# Web Awesome Pro registry token — used only in this discarded build stage,
+# so it never reaches the final image.
+ARG WEBAWESOME_NPM_TOKEN
+ENV WEBAWESOME_NPM_TOKEN=${WEBAWESOME_NPM_TOKEN}
+COPY web/package*.json web/.npmrc ./
 RUN npm ci --no-fund --no-audit
 COPY web .
 RUN npm run build
