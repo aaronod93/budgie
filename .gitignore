@@ -1,0 +1,9 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
