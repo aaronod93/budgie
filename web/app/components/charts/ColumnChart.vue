@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Grouped column chart (1-2 series), hand-rolled SVG per the dataviz method:
-// thin marks, 4px rounded data-ends at the top only, 2px surface gap between
+// thin marks, 4px data-ends at the top only, 2px surface gap between
 // adjacent columns, recessive gridlines, ink-colored text, hover tooltip.
 export interface ColumnSeries {
   name: string
@@ -81,7 +81,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
   <div class="relative">
     <div v-if="series.length > 1" class="mb-2 flex gap-4">
       <span v-for="s in series" :key="s.name" class="flex items-center gap-1.5 text-xs text-ink-600">
-        <span class="h-2.5 w-2.5 rounded-sm" :style="{ background: s.color }" />
+        <span class="h-2.5 w-2.5" :style="{ background: s.color }" />
         {{ s.name }}
       </span>
     </div>
@@ -124,7 +124,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
 
     <div
       v-if="hovered !== null"
-      class="pointer-events-none absolute rounded-md border border-paper-400 bg-paper-50 px-3 py-2 text-xs shadow-md"
+      class="pointer-events-none absolute border border-paper-400 bg-paper-50 px-3 py-2 text-xs shadow-md"
       :style="{
         left: `${((slotX(hovered) + slotWidth / 2) / W) * 100}%`,
         top: '0px',
@@ -133,7 +133,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
     >
       <p class="font-semibold text-ink-700">{{ labels[hovered] }}</p>
       <p v-for="s in series" :key="s.name" class="mt-0.5 flex items-center gap-1.5 text-ink-600">
-        <span class="h-2 w-2 rounded-sm" :style="{ background: s.color }" />
+        <span class="h-2 w-2" :style="{ background: s.color }" />
         {{ s.name }}: {{ formatMoney(s.values[hovered] ?? 0, currency) }}
       </p>
     </div>

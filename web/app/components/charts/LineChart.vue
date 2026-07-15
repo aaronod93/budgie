@@ -103,7 +103,7 @@ const labelEvery = computed(() => Math.ceil(props.labels.length / 6))
 
     <div
       v-if="hovered !== null"
-      class="pointer-events-none absolute rounded-md border border-paper-400 bg-paper-50 px-3 py-2 text-xs shadow-md"
+      class="pointer-events-none absolute border border-paper-400 bg-paper-50 px-3 py-2 text-xs shadow-md"
       :style="{
         left: `${(x(hovered) / W) * 100}%`,
         top: '0px',

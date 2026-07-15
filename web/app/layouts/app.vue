@@ -71,29 +71,36 @@ async function logout() {
 
       <nav class="px-2">
         <NuxtLink
+          to="/accounts"
+          class="block px-3 py-2 font-medium hover:bg-ink-700"
+          active-class="bg-ink-700 text-accent-300"
+        >
+          All Accounts
+        </NuxtLink>
+        <NuxtLink
           to="/budget"
-          class="block rounded-md px-3 py-2 font-medium hover:bg-ink-700"
+          class="block px-3 py-2 font-medium hover:bg-ink-700"
           active-class="bg-ink-700 text-accent-300"
         >
           Budget
         </NuxtLink>
         <NuxtLink
           to="/reports"
-          class="block rounded-md px-3 py-2 font-medium hover:bg-ink-700"
+          class="block px-3 py-2 font-medium hover:bg-ink-700"
           active-class="bg-ink-700 text-accent-300"
         >
           Reports
         </NuxtLink>
         <NuxtLink
           to="/payees"
-          class="block rounded-md px-3 py-2 font-medium hover:bg-ink-700"
+          class="block px-3 py-2 font-medium hover:bg-ink-700"
           active-class="bg-ink-700 text-accent-300"
         >
           Payees
         </NuxtLink>
         <NuxtLink
           to="/sharing"
-          class="block rounded-md px-3 py-2 font-medium hover:bg-ink-700"
+          class="block px-3 py-2 font-medium hover:bg-ink-700"
           active-class="bg-ink-700 text-accent-300"
         >
           Sharing
@@ -106,7 +113,7 @@ async function logout() {
           v-for="account in onBudgetAccounts"
           :key="account.uuid"
           :to="`/accounts/${account.uuid}`"
-          class="mt-1 flex items-center justify-between rounded-md px-3 py-1.5 text-sm hover:bg-ink-700"
+          class="mt-1 flex items-center justify-between px-3 py-1.5 text-sm hover:bg-ink-700"
           active-class="bg-ink-700 text-accent-300"
         >
           <span class="truncate">{{ account.name }}</span>
@@ -121,7 +128,7 @@ async function logout() {
             v-for="account in trackingAccounts"
             :key="account.uuid"
             :to="`/accounts/${account.uuid}`"
-            class="mt-1 flex items-center justify-between rounded-md px-3 py-1.5 text-sm hover:bg-ink-700"
+            class="mt-1 flex items-center justify-between px-3 py-1.5 text-sm hover:bg-ink-700"
             active-class="bg-ink-700 text-accent-300"
           >
             <span class="truncate">{{ account.name }}</span>
@@ -135,7 +142,7 @@ async function logout() {
             v-for="account in closedAccounts"
             :key="account.uuid"
             :to="`/accounts/${account.uuid}`"
-            class="mt-1 block truncate rounded-md px-3 py-1 text-xs text-mist-500 hover:bg-ink-700 hover:text-mist-300"
+            class="mt-1 block truncate px-3 py-1 text-xs text-mist-500 hover:bg-ink-700 hover:text-mist-300"
             active-class="bg-ink-700"
           >
             {{ account.name }}
@@ -143,7 +150,7 @@ async function logout() {
         </template>
 
         <button
-          class="mt-3 w-full rounded-md border border-ink-600 px-3 py-1.5 text-sm text-mist-200 hover:bg-ink-700"
+          class="mt-3 w-full border border-ink-600 px-3 py-1.5 text-sm text-mist-200 hover:bg-ink-700"
           @click="showAddAccount = true"
         >
           + Add account
@@ -158,11 +165,11 @@ async function logout() {
       </div>
     </aside>
 
-    <main class="min-w-0 flex-1 bg-ink-800">
+    <main class="min-w-0 flex-1">
       <div
         v-for="invitation in store.invitations"
         :key="invitation.uuid"
-        class="flex flex-wrap items-center justify-between gap-2 border-b border-ink-600 bg-ink-700 px-6 py-3 text-sm text-paper-100"
+        class="flex flex-wrap items-center justify-between gap-2 border-b border-accent-300 bg-accent-100 px-6 py-3 text-sm text-ink-800"
       >
         <span>
           <strong>{{ invitation.invited_by }}</strong> invited you to share
@@ -170,11 +177,11 @@ async function logout() {
         </span>
         <span class="flex gap-2">
           <button
-            class="rounded-md bg-accent-400 px-3 py-1 font-medium text-ink-900 hover:bg-accent-500"
+            class=" bg-accent-400 px-3 py-1 font-medium text-ink-900 hover:bg-accent-500"
             @click="store.acceptInvitation(invitation.uuid)"
           >Accept</button>
           <button
-            class="rounded-md border border-ink-500 px-3 py-1 text-mist-200 hover:bg-ink-600"
+            class=" border border-paper-400 px-3 py-1 text-ink-700 hover:bg-paper-200"
             @click="store.declineInvitation(invitation.uuid)"
           >Decline</button>
         </span>
@@ -191,7 +198,7 @@ async function logout() {
       >
         <div
           v-if="store.liveMessage"
-          class="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg bg-paper-200 px-4 py-3 text-sm text-ink-800 shadow-lg"
+          class="fixed bottom-4 right-4 z-50 max-w-sm bg-paper-200 px-4 py-3 text-sm text-ink-800 shadow-lg"
         >
           {{ store.liveMessage }}
         </div>
@@ -200,35 +207,31 @@ async function logout() {
 
     <!-- Add account modal -->
     <div v-if="showAddAccount" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-4 text-lg font-semibold">Add account</h2>
         <form class="space-y-4" @submit.prevent="submitAccount">
           <div>
             <label class="mb-1 block text-sm font-medium">Name</label>
-            <input v-model="accountForm.name" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+            <input v-model="accountForm.name" required class="w-full border border-paper-400 bg-paper-50 px-3 py-2">
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Type</label>
-            <wa-select
-              class="w-full"
-              :value="accountForm.type"
-              @change="accountForm.type = String(($event.target as HTMLSelectElement).value || 'checking')"
-            >
-              <wa-option value="checking">Checking</wa-option>
-              <wa-option value="savings">Savings</wa-option>
-              <wa-option value="cash">Cash</wa-option>
-              <wa-option value="credit">Credit card</wa-option>
-              <wa-option value="tracking">Tracking (off budget)</wa-option>
-            </wa-select>
+            <UiSelect v-model="accountForm.type">
+              <option value="checking">Checking</option>
+              <option value="savings">Savings</option>
+              <option value="cash">Cash</option>
+              <option value="credit">Credit card</option>
+              <option value="tracking">Tracking (off budget)</option>
+            </UiSelect>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Current balance</label>
-            <input v-model="accountForm.balance" placeholder="0.00" inputmode="decimal" class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+            <input v-model="accountForm.balance" placeholder="0.00" inputmode="decimal" class="w-full border border-paper-400 bg-paper-50 px-3 py-2">
           </div>
           <p v-if="accountError" class="text-sm text-red-600">{{ accountError }}</p>
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showAddAccount = false">Cancel</button>
-            <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Add</button>
+            <button type="button" class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showAddAccount = false">Cancel</button>
+            <button type="submit" class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Add</button>
           </div>
         </form>
       </div>

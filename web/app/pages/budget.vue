@@ -136,34 +136,34 @@ async function assignAllUnderfunded() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl p-6">
+  <div class="mx-auto p-6">
     <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <button class="rounded-md border border-ink-600 text-mist-200 px-2.5 py-1 hover:bg-ink-700" @click="store.shiftMonth(-1)">‹</button>
+        <button class=" border border-paper-400 text-ink-700 px-2.5 py-1 hover:bg-paper-100" @click="store.shiftMonth(-1)">‹</button>
         <h1 class="w-44 text-center text-xl font-bold">{{ monthLabel }}</h1>
-        <button class="rounded-md border border-ink-600 text-mist-200 px-2.5 py-1 hover:bg-ink-700" @click="store.shiftMonth(1)">›</button>
+        <button class=" border border-paper-400 text-ink-700 px-2.5 py-1 hover:bg-paper-100" @click="store.shiftMonth(1)">›</button>
       </div>
 
       <div class="flex items-center gap-3">
         <button
-          class="rounded-md border px-3 py-2 text-sm"
+          class=" border px-3 py-2 text-sm"
           :class="editMode
-            ? 'border-accent-400 bg-accent-400/10 font-medium text-accent-300'
-            : 'border-ink-600 text-mist-200 hover:bg-ink-700'"
+            ? 'border-accent-400 bg-accent-100 font-medium text-accent-600'
+            : 'border-paper-400 text-ink-700 hover:bg-paper-100'"
           @click="editMode = !editMode"
         >
           {{ editMode ? 'Done editing' : 'Edit categories' }}
         </button>
         <button
           v-if="store.month && store.month.underfunded_total > 0"
-          class="rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20"
+          class=" border border-amber-400 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-200"
           @click="assignAllUnderfunded"
         >
           Assign underfunded ({{ formatMoney(store.month.underfunded_total, store.current?.currency) }})
         </button>
         <div
           v-if="store.month"
-          class="rounded-lg px-5 py-2 text-center"
+          class=" px-5 py-2 text-center"
           :class="store.month.ready_to_assign >= 0 ? 'bg-accent-400 text-ink-900' : 'bg-red-600 text-white'"
         >
           <p class="text-lg font-bold leading-tight">{{ formatMoney(store.month.ready_to_assign, store.current?.currency) }}</p>
@@ -180,21 +180,21 @@ async function assignAllUnderfunded() {
           { key: 'available', label: 'Money available' },
         ] as const)"
         :key="option.key"
-        class="rounded-full border px-3 py-1 text-sm"
+        class=" border px-3 py-1 text-sm"
         :class="filter === option.key
-          ? 'border-accent-400 bg-accent-400/10 font-medium text-accent-300'
-          : 'border-ink-600 text-mist-200 hover:bg-ink-700'"
+          ? 'border-accent-400 bg-accent-100 font-medium text-accent-600'
+          : 'border-paper-400 text-ink-700 hover:bg-paper-100'"
         @click="filter = option.key"
       >
         {{ option.label }}
       </button>
     </div>
 
-    <p v-if="error" class="mb-4 rounded-md bg-red-500/15 px-4 py-2 text-sm text-red-300">{{ error }}</p>
+    <p v-if="error" class="mb-4 bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
 
     <p
       v-if="store.month && store.month.credit_overspend > 0"
-      class="mb-4 rounded-md bg-amber-500/10 px-4 py-2 text-sm text-amber-300"
+      class="mb-4 bg-amber-100 px-4 py-2 text-sm text-amber-700"
     >
       {{ formatMoney(store.month.credit_overspend, store.current?.currency) }} of credit card spending
       isn't covered by envelopes — it will become card debt unless you assign money to those categories.
@@ -202,7 +202,7 @@ async function assignAllUnderfunded() {
 
     <CategoryManager v-if="editMode" />
 
-    <div v-else-if="store.month" class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
+    <div v-else-if="store.month" class="overflow-x-auto border border-paper-300 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
@@ -238,9 +238,9 @@ async function assignAllUnderfunded() {
                   >◎</button>
                 </div>
                 <div v-if="category.target" class="mt-1 flex items-center gap-2">
-                  <div class="h-1.5 w-32 overflow-hidden rounded-full bg-paper-300">
+                  <div class="h-1.5 w-32 overflow-hidden bg-paper-300">
                     <div
-                      class="h-full rounded-full"
+                      class="h-full"
                       :class="category.target.underfunded > 0 ? 'bg-accent-400' : 'bg-mist-500'"
                       :style="{ width: `${category.target.progress}%` }"
                     />
@@ -257,7 +257,7 @@ async function assignAllUnderfunded() {
                   ref="assignInput"
                   v-model="editValue"
                   inputmode="decimal"
-                  class="w-24 rounded border border-accent-400 bg-paper-50 px-2 py-0.5 text-right focus:outline-none"
+                  class="w-24 border border-accent-400 bg-paper-50 px-2 py-0.5 text-right focus:outline-none"
                   autofocus
                   @keydown.enter.prevent="commitEdit(category)"
                   @keydown.esc="editing = null"
@@ -265,7 +265,7 @@ async function assignAllUnderfunded() {
                 >
                 <button
                   v-else
-                  class="rounded px-2 py-0.5 hover:bg-paper-100 hover:text-accent-600"
+                  class=" px-2 py-0.5 hover:bg-paper-100 hover:text-accent-600"
                   @click="startEdit(category)"
                 >
                   {{ formatMoney(category.assigned, store.current?.currency) }}
@@ -275,13 +275,13 @@ async function assignAllUnderfunded() {
                 {{ formatMoney(category.activity, store.current?.currency) }}
               </td>
               <td class="px-4 py-2 text-right">
-                <span class="inline-block min-w-20 rounded-full px-2.5 py-0.5 font-medium" :class="availableClass(category.available)">
+                <span class="inline-block min-w-20 px-2.5 py-0.5 font-medium" :class="availableClass(category.available)">
                   {{ formatMoney(category.available, store.current?.currency) }}
                 </span>
               </td>
               <td class="pr-3 text-right">
                 <button
-                  class="rounded px-1.5 py-0.5 text-paper-400 hover:bg-paper-100 hover:text-ink-700"
+                  class=" px-1.5 py-0.5 text-paper-400 hover:bg-paper-100 hover:text-ink-700"
                   title="Move money"
                   @click="openMove(category)"
                 >⇄</button>
@@ -303,34 +303,25 @@ async function assignAllUnderfunded() {
 
     <!-- Target modal -->
     <div v-if="goalCategory" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Target for {{ goalCategory.name }}</h2>
         <p class="mb-4 text-sm text-mist-700">Save ahead for irregular expenses by dripping money in monthly.</p>
         <form class="space-y-4" @submit.prevent="saveGoal">
           <div>
             <label class="mb-1 block text-sm font-medium">Type</label>
-            <wa-select
-              class="w-full"
-              :value="goalForm.type"
-              @change="goalForm.type = String(($event.target as HTMLSelectElement).value || 'refill_monthly')"
-            >
-              <wa-option value="refill_monthly">Refill available up to… (needed for spending)</wa-option>
-              <wa-option value="monthly_builder">Assign each month… (savings builder)</wa-option>
-              <wa-option value="balance_by_date">Reach a balance by a date</wa-option>
-            </wa-select>
+            <UiSelect v-model="goalForm.type">
+              <option value="refill_monthly">Refill available up to… (needed for spending)</option>
+              <option value="monthly_builder">Assign each month… (savings builder)</option>
+              <option value="balance_by_date">Reach a balance by a date</option>
+            </UiSelect>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Amount</label>
-            <input v-model="goalForm.amount" inputmode="decimal" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+            <input v-model="goalForm.amount" inputmode="decimal" required class="w-full border border-paper-400 bg-paper-50 px-3 py-2">
           </div>
           <div v-if="goalForm.type === 'balance_by_date'">
             <label class="mb-1 block text-sm font-medium">By date</label>
-            <wa-date-input
-              required
-              class="w-full"
-              :value="goalForm.target_date"
-              @change="goalForm.target_date = ($event.target as HTMLInputElement).value"
-            />
+            <UiDateField v-model="goalForm.target_date" required />
           </div>
           <div class="flex items-center justify-between">
             <button
@@ -343,8 +334,8 @@ async function assignAllUnderfunded() {
             </button>
             <span v-else />
             <div class="flex gap-2">
-              <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="goalCategory = null">Cancel</button>
-              <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Save</button>
+              <button type="button" class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="goalCategory = null">Cancel</button>
+              <button type="submit" class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Save</button>
             </div>
           </div>
         </form>
@@ -353,7 +344,7 @@ async function assignAllUnderfunded() {
 
     <!-- Move money modal -->
     <div v-if="moveTarget" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Move money</h2>
         <p class="mb-4 text-sm text-mist-700">
           From <strong>{{ moveTarget.name }}</strong>
@@ -362,30 +353,26 @@ async function assignAllUnderfunded() {
         <form class="space-y-4" @submit.prevent="submitMove">
           <div>
             <label class="mb-1 block text-sm font-medium">To</label>
-            <wa-select
-              class="w-full"
-              :value="moveForm.to"
-              @change="moveForm.to = String(($event.target as HTMLSelectElement).value || 'rta')"
-            >
-              <wa-option value="rta">Ready to Assign</wa-option>
-              <template v-for="group in store.month?.groups" :key="group.uuid">
-                <wa-option
+            <UiSelect v-model="moveForm.to">
+              <option value="rta">Ready to Assign</option>
+              <optgroup v-for="group in store.month?.groups" :key="group.uuid" :label="group.name">
+                <option
                   v-for="category in group.categories.filter(c => c.uuid !== moveTarget?.uuid)"
                   :key="category.uuid"
                   :value="category.uuid"
                 >
-                  {{ category.icon ? category.icon + ' ' : '' }}{{ group.name }} · {{ category.name }}
-                </wa-option>
-              </template>
-            </wa-select>
+                  {{ category.icon ? category.icon + ' ' : '' }}{{ category.name }}
+                </option>
+              </optgroup>
+            </UiSelect>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium">Amount</label>
-            <input v-model="moveForm.amount" inputmode="decimal" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+            <input v-model="moveForm.amount" inputmode="decimal" required class="w-full border border-paper-400 bg-paper-50 px-3 py-2">
           </div>
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="moveTarget = null">Cancel</button>
-            <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Move</button>
+            <button type="button" class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="moveTarget = null">Cancel</button>
+            <button type="submit" class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Move</button>
           </div>
         </form>
       </div>

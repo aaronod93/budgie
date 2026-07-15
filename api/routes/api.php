@@ -45,7 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('category-groups', CategoryGroupController::class)->except('show');
             Route::post('categories-reorder', [CategoryController::class, 'reorder']);
             Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
-            Route::apiResource('payees', PayeeController::class)->only(['index', 'update']);
+            Route::apiResource('payees', PayeeController::class)->only(['index', 'store', 'update']);
             Route::apiResource('transactions', TransactionController::class);
             Route::post('transactions-import', [ImportController::class, 'store']);
             Route::post('transactions-approve-all', [ImportController::class, 'approveAll']);

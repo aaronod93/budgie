@@ -10,6 +10,49 @@ function payeeSetup(object $test): array
     return [$budget, $account];
 }
 
+test('a payee can be created directly from the payees list', function () {
+    [$budget] = payeeSetup($this);
+
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/payees", ['name' => 'Netflix', 'icon' => '🎬'])
+        ->assertCreated()
+        ->assertJsonPath('data.name', 'Netflix')
+        ->assertJsonPath('data.icon', '🎬')
+        ->assertJsonPath('data.inflow_total', 0)
+        ->assertJsonPath('data.outflow_total', 0);
+
+    $names = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'))->pluck('name');
+    expect($names)->toContain('Netflix');
+});
+
+test('creating a payee rejects blank and duplicate names', function () {
+    [$budget] = payeeSetup($this);
+
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/payees", ['name' => ''])
+        ->assertUnprocessable();
+
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/payees", ['name' => 'Spotify'])->assertCreated();
+
+    // Case-insensitive duplicate is refused.
+    $this->postJson("/api/v1/budgets/{$budget->uuid}/payees", ['name' => 'spotify'])
+        ->assertUnprocessable()->assertJsonValidationErrors('name');
+});
+
+test('the payees list reports lifetime money in and out', function () {
+    [$budget, $account] = payeeSetup($this);
+
+    foreach ([-1000, -2500, 400] as $amount) {
+        $this->postJson("/api/v1/budgets/{$budget->uuid}/transactions", [
+            'account_id' => $account['uuid'], 'date' => '2026-07-01', 'amount' => $amount,
+            'payee_name' => 'Aldi',
+        ]);
+    }
+
+    $aldi = collect($this->getJson("/api/v1/budgets/{$budget->uuid}/payees")->json('data'))
+        ->firstWhere('name', 'Aldi');
+
+    expect($aldi)->toMatchArray(['inflow_total' => 400, 'outflow_total' => 3500]);
+});
+
 test('a payee default category auto-categorises new transactions', function () {
     [$budget, $account] = payeeSetup($this);
     $groceries = $budget->categories()->where('name', 'Groceries')->first();

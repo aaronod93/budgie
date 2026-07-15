@@ -108,10 +108,13 @@ async function load() {
 
 const savedPayees = computed(() => payees.value.filter(p => !p.transfer_account_uuid))
 
-/** Combobox options carry payee UUIDs (option values cannot contain spaces);
- *  free-typed new payee names arrive as custom values. */
-function onPayeeChange(event: Event) {
-  const value = String((event.target as HTMLInputElement).value ?? '')
+const payeeOptions = computed(() => savedPayees.value.map(p => ({
+  value: p.uuid,
+  label: `${p.icon ? p.icon + ' ' : ''}${p.name}`,
+})))
+
+/** Options carry payee UUIDs; free-typed new payee names arrive as-is. */
+function onPayeeChange(value: string) {
   const match = savedPayees.value.find(p => p.uuid === value)
   if (!match) {
     form.payee = value
@@ -356,59 +359,59 @@ async function remove(txn: Txn) {
       <div>
         <h1 class="text-xl font-bold">
           {{ account?.name ?? 'Account' }}
-          <span v-if="account?.closed" class="ml-2 rounded-full bg-ink-700 px-2 py-0.5 align-middle text-xs font-medium text-mist-300">Closed</span>
+          <span v-if="account?.closed" class="ml-2 bg-paper-300 px-2 py-0.5 align-middle text-xs font-medium text-mist-700">Closed</span>
         </h1>
-        <p class="text-sm text-mist-300 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
+        <p class="text-sm text-mist-700 capitalize">{{ account?.type }}{{ account?.on_budget ? '' : ' · off budget' }}</p>
       </div>
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-3 text-right">
           <div>
-            <p class="font-semibold text-mist-200">{{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}</p>
-            <p class="text-xs text-mist-500">Cleared</p>
+            <p class="font-semibold text-ink-700">{{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}</p>
+            <p class="text-xs text-mist-700">Cleared</p>
           </div>
-          <span class="text-mist-500">+</span>
+          <span class="text-mist-700">+</span>
           <div>
-            <p class="font-semibold text-mist-200">
+            <p class="font-semibold text-ink-700">
               {{ formatMoney((account?.balance ?? 0) - (account?.cleared_balance ?? 0), store.current?.currency) }}
             </p>
-            <p class="text-xs text-mist-500">Uncleared</p>
+            <p class="text-xs text-mist-700">Uncleared</p>
           </div>
-          <span class="text-mist-500">=</span>
+          <span class="text-mist-700">=</span>
           <div>
-            <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-400' : 'text-paper-100'">
+            <p class="text-lg font-bold" :class="(account?.balance ?? 0) < 0 ? 'text-red-600' : 'text-ink-800'">
               {{ formatMoney(account?.balance ?? 0, store.current?.currency) }}
             </p>
-            <p class="text-xs text-mist-500">Working balance</p>
+            <p class="text-xs text-mist-700">Working balance</p>
           </div>
         </div>
         <button
-          class="rounded-md border border-ink-600 text-mist-200 px-3 py-1.5 text-sm hover:bg-ink-700"
+          class=" border border-paper-400 text-ink-700 px-3 py-1.5 text-sm hover:bg-paper-100"
           @click="showImport = true"
         >
           Import
         </button>
         <button
-          class="rounded-md border border-ink-600 text-mist-200 px-3 py-1.5 text-sm hover:bg-ink-700"
+          class=" border border-paper-400 text-ink-700 px-3 py-1.5 text-sm hover:bg-paper-100"
           @click="showReconcile = true; statementBalance = centsToInput(account?.cleared_balance ?? 0)"
         >
           Reconcile
         </button>
         <button
           v-if="account?.closed"
-          class="rounded-md border border-accent-400/60 bg-accent-400/10 px-3 py-1.5 text-sm text-accent-300 hover:bg-accent-400/20"
+          class=" border border-accent-400 bg-accent-100 px-3 py-1.5 text-sm text-accent-600 hover:bg-accent-200"
           @click="reopenAccount"
         >
           Reopen account
         </button>
         <button
           v-else
-          class="rounded-md border border-ink-600 px-3 py-1.5 text-sm text-mist-200 hover:bg-ink-700"
+          class=" border border-paper-400 px-3 py-1.5 text-sm text-ink-700 hover:bg-paper-100"
           @click="closeAccount"
         >
           Close account
         </button>
         <button
-          class="rounded-md border border-red-500/50 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10"
+          class=" border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-100"
           @click="showDeleteAccount = true; deleteConfirmText = ''"
         >
           Delete account
@@ -420,81 +423,64 @@ async function remove(txn: Txn) {
       <input
         v-model="search"
         placeholder="Search payee or memo…"
-        class="w-64 rounded-md border border-ink-600 bg-ink-700 px-3 py-1.5 text-sm text-paper-100 placeholder:text-mist-500"
+        class="w-64 border border-paper-400 bg-white px-3 py-1.5 text-sm text-ink-800 placeholder:text-mist-700"
       >
       <button
         v-if="unapprovedCount > 0"
-        class="rounded-md border border-accent-400/60 bg-accent-400/10 px-3 py-1.5 text-sm font-medium text-accent-300 hover:bg-accent-400/20"
+        class=" border border-accent-400 bg-accent-100 px-3 py-1.5 text-sm font-medium text-accent-600 hover:bg-accent-200"
         @click="approveAll"
       >
         Approve {{ unapprovedCount }} imported
       </button>
     </div>
 
-    <p v-if="reconcileMessage" class="mb-4 rounded-md bg-mist-500/15 px-4 py-2 text-sm text-mist-200">
+    <p v-if="reconcileMessage" class="mb-4 bg-mist-200 px-4 py-2 text-sm text-ink-700">
       {{ reconcileMessage }}
     </p>
 
     <!-- Add / edit form (hidden while the account is closed) -->
     <form
       v-if="!account?.closed"
-      class="mb-6 grid grid-cols-2 gap-3 rounded-xl border border-ink-700 bg-paper-200 p-4 text-ink-800 md:grid-cols-8"
+      class="mb-6 grid grid-cols-2 gap-3 border border-paper-300 bg-paper-200 p-4 text-ink-800 md:grid-cols-8"
       @submit.prevent="submit"
     >
-      <wa-date-input
-        size="small"
-        required
-        :value="form.date"
-        @change="form.date = ($event.target as HTMLInputElement).value"
-      />
-      <wa-combobox
-        size="small"
+      <UiDateField v-model="form.date" size="sm" required />
+      <UiCombobox
+        size="sm"
         placeholder="Payee"
-        allow-custom-value
+        allow-custom
         :disabled="editingTransfer"
-        :value="form.payee"
-        @change="onPayeeChange"
-      >
-        <wa-option v-for="payee in savedPayees" :key="payee.uuid" :value="payee.uuid">
-          {{ payee.icon ? payee.icon + ' ' : '' }}{{ payee.name }}
-        </wa-option>
-      </wa-combobox>
-      <wa-combobox
-        size="small"
+        :model-value="form.payee"
+        :options="payeeOptions"
+        @update:model-value="onPayeeChange"
+      />
+      <UiCombobox
+        size="sm"
         placeholder="Category"
         :disabled="editingTransfer"
-        :value="form.category"
-        @change="form.category = String(($event.target as HTMLInputElement).value || 'none')"
-      >
-        <wa-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </wa-option>
-      </wa-combobox>
-      <input v-model="form.memo" placeholder="Memo" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
-      <input ref="outflowInput" v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
-      <input ref="inflowInput" v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
-      <wa-select
-        v-if="!editingUuid"
-        size="small"
-        title="Repeat"
-        :value="form.repeat"
-        @change="form.repeat = String(($event.target as HTMLSelectElement).value || 'none')"
-      >
-        <wa-option value="none">No repeat</wa-option>
-        <wa-option value="once">Once (scheduled)</wa-option>
-        <wa-option value="weekly">Weekly</wa-option>
-        <wa-option value="fortnightly">Fortnightly</wa-option>
-        <wa-option value="monthly">Monthly</wa-option>
-        <wa-option value="yearly">Yearly</wa-option>
-      </wa-select>
+        :model-value="form.category"
+        :options="categoryOptions"
+        @update:model-value="form.category = $event || 'none'"
+      />
+      <input v-model="form.memo" placeholder="Memo" class=" border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm">
+      <input ref="outflowInput" v-model="form.outflow" placeholder="Outflow" inputmode="decimal" class=" border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
+      <input ref="inflowInput" v-model="form.inflow" placeholder="Inflow" inputmode="decimal" class=" border border-paper-400 bg-paper-50 px-2 py-1.5 text-right text-sm">
+      <UiSelect v-if="!editingUuid" v-model="form.repeat" size="sm" title="Repeat">
+        <option value="none">No repeat</option>
+        <option value="once">Once (scheduled)</option>
+        <option value="weekly">Weekly</option>
+        <option value="fortnightly">Fortnightly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </UiSelect>
       <div class="flex gap-1">
-        <button type="submit" class="flex-1 rounded-md bg-accent-400 px-3 py-1.5 text-sm font-medium text-ink-900 hover:bg-accent-500">
+        <button type="submit" class="flex-1 bg-accent-400 px-3 py-1.5 text-sm font-medium text-ink-900 hover:bg-accent-500">
           {{ editingUuid ? 'Save' : 'Add' }}
         </button>
         <button
           v-if="editingUuid"
           type="button"
-          class="rounded-md border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm text-ink-600 hover:bg-paper-300"
+          class=" border border-paper-400 bg-paper-50 px-2 py-1.5 text-sm text-ink-600 hover:bg-paper-300"
           @click="cancelEdit"
         >
           ✕
@@ -502,10 +488,10 @@ async function remove(txn: Txn) {
       </div>
     </form>
 
-    <p v-if="error" class="mb-4 rounded-md bg-red-500/15 px-4 py-2 text-sm text-red-300">{{ error }}</p>
+    <p v-if="error" class="mb-4 bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
 
     <!-- Scheduled transactions -->
-    <div v-if="schedules.length" class="mb-6 rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
+    <div v-if="schedules.length" class="mb-6 border border-paper-300 bg-paper-200 text-ink-800">
       <p class="border-b border-paper-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-700">
         Scheduled
       </p>
@@ -521,13 +507,13 @@ async function remove(txn: Txn) {
             </td>
             <td class="w-32 pr-2 text-right">
               <button
-                class="rounded border border-accent-500 px-2 py-0.5 text-xs text-accent-600 hover:bg-accent-100"
+                class=" border border-accent-500 px-2 py-0.5 text-xs text-accent-600 hover:bg-accent-100"
                 @click="enterScheduled(scheduled)"
               >
                 Enter now
               </button>
               <button
-                class="ml-1 rounded px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700"
+                class="ml-1 px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700"
                 title="Delete"
                 @click="removeScheduled(scheduled)"
               >✕</button>
@@ -537,7 +523,7 @@ async function remove(txn: Txn) {
       </table>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-ink-700 bg-paper-200 text-ink-800">
+    <div class="overflow-x-auto border border-paper-300 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
@@ -561,7 +547,7 @@ async function remove(txn: Txn) {
           >
             <td class="px-3 py-2">
               <button
-                class="h-4 w-4 rounded-full border"
+                class="h-4 w-4 border"
                 :class="txn.cleared === 'uncleared' ? 'border-paper-400 bg-paper-50' : 'border-emerald-700 bg-emerald-600'"
                 :title="txn.cleared"
                 @click="toggleCleared(txn)"
@@ -570,7 +556,7 @@ async function remove(txn: Txn) {
             <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ txn.date }}</td>
             <td class="cursor-pointer px-3 py-2" @click="startEdit(txn)">
               {{ txn.payee?.icon ? txn.payee.icon + ' ' : '' }}{{ txn.payee?.name ?? '—' }}
-              <span v-if="!txn.approved" class="ml-1 rounded bg-accent-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-900">New</span>
+              <span v-if="!txn.approved" class="ml-1 bg-accent-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-900">New</span>
             </td>
             <td class="cursor-pointer px-3 py-2 text-ink-700" @click="startEdit(txn)">{{ rowLabel(txn) }}</td>
             <td class="cursor-pointer px-3 py-2 text-mist-700" @click="startEdit(txn)">{{ txn.memo }}</td>
@@ -583,7 +569,7 @@ async function remove(txn: Txn) {
             </td>
             <td class="pr-2 text-right">
               <span v-if="txn.cleared === 'reconciled'" class="px-1.5 text-paper-400" title="Reconciled (locked)">🔒</span>
-              <button v-else class="rounded px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700" title="Delete" @click="remove(txn)">✕</button>
+              <button v-else class=" px-1.5 text-paper-400 hover:bg-red-100 hover:text-red-700" title="Delete" @click="remove(txn)">✕</button>
             </td>
           </tr>
         </tbody>
@@ -599,7 +585,7 @@ async function remove(txn: Txn) {
 
     <!-- Delete account modal (type-to-confirm) -->
     <div v-if="showDeleteAccount" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold text-red-700">Delete {{ account?.name }}?</h2>
         <p class="mb-2 text-sm text-mist-700">
           This permanently deletes the account and <strong>all {{ transactions.length }} of its
@@ -614,16 +600,16 @@ async function remove(txn: Txn) {
             v-model="deleteConfirmText"
             placeholder="CONFIRMDELETE"
             autocomplete="off"
-            class="w-full rounded-md border border-red-400 bg-paper-50 px-3 py-2 font-mono"
+            class="w-full border border-red-400 bg-paper-50 px-3 py-2 font-mono"
           >
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showDeleteAccount = false">
+            <button type="button" class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showDeleteAccount = false">
               Cancel
             </button>
             <button
               type="submit"
               :disabled="deleteConfirmText !== 'CONFIRMDELETE' || deleteBusy"
-              class="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+              class=" bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {{ deleteBusy ? 'Deleting…' : 'Delete forever' }}
             </button>
@@ -634,7 +620,7 @@ async function remove(txn: Txn) {
 
     <!-- Reconcile modal -->
     <div v-if="showReconcile" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Reconcile {{ account?.name }}</h2>
         <p class="mb-4 text-sm text-mist-700">
           Cleared balance is {{ formatMoney(account?.cleared_balance ?? 0, store.current?.currency) }}.
@@ -647,11 +633,11 @@ async function remove(txn: Txn) {
             inputmode="decimal"
             required
             placeholder="Statement balance"
-            class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2"
+            class="w-full border border-paper-400 bg-paper-50 px-3 py-2"
           >
           <div class="flex justify-end gap-2">
-            <button type="button" class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showReconcile = false">Cancel</button>
-            <button type="submit" class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Reconcile</button>
+            <button type="button" class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="showReconcile = false">Cancel</button>
+            <button type="submit" class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500">Reconcile</button>
           </div>
         </form>
       </div>

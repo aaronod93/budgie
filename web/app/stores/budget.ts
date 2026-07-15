@@ -201,9 +201,13 @@ export const useBudgetStore = defineStore('budget', () => {
     await Promise.all([loadGroups(), loadMonth()])
   }
 
-  async function createCategory(groupUuid: string, name: string): Promise<void> {
-    await apiFetch(`${base.value}/categories`, { method: 'POST', body: { name, group_id: groupUuid } })
+  async function createCategory(groupUuid: string, name: string): Promise<string> {
+    const res = await apiFetch<{ data: { uuid: string } }>(
+      `${base.value}/categories`,
+      { method: 'POST', body: { name, group_id: groupUuid } },
+    )
     await Promise.all([loadGroups(), loadMonth()])
+    return res.data.uuid
   }
 
   async function updateCategory(

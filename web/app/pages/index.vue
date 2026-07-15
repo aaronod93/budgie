@@ -8,7 +8,7 @@ const busy = ref(false)
 
 onMounted(async () => {
   await store.init()
-  if (store.current) await navigateTo('/budget')
+  if (store.current) await navigateTo('/accounts')
 })
 
 async function create() {
@@ -28,21 +28,21 @@ async function create() {
 
 <template>
   <div class="flex min-h-screen items-center justify-center p-4">
-    <div v-if="store.initialized && !store.current" class="w-full max-w-sm rounded-xl bg-paper-200 p-8 text-ink-800 shadow-lg">
+    <div v-if="store.initialized && !store.current" class="w-full max-w-sm bg-paper-200 p-8 text-ink-800 shadow-lg">
       <h1 class="mb-1 text-2xl font-bold text-accent-500">Welcome to Lil' Budgie</h1>
       <p class="mb-6 text-sm text-mist-700">Name your first budget to get started.</p>
       <form class="space-y-4" @submit.prevent="create">
-        <input v-model="name" required class="w-full rounded-md border border-paper-400 bg-paper-50 px-3 py-2">
+        <input v-model="name" required class="w-full border border-paper-400 bg-paper-50 px-3 py-2">
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
         <button
           type="submit"
           :disabled="busy"
-          class="w-full rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
+          class="w-full bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
         >
           {{ busy ? 'Creating…' : 'Create budget' }}
         </button>
       </form>
     </div>
-    <p v-else class="text-mist-300">Loading…</p>
+    <p v-else class="text-mist-700">Loading…</p>
   </div>
 </template>

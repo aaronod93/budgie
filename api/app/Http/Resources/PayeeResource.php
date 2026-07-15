@@ -22,6 +22,9 @@ class PayeeResource extends JsonResource
             // and usual direction, for register pre-fill.
             'last_category_uuid' => $this->last_category_uuid ?? null,
             'last_flow' => $this->last_flow ?? null,
+            // Lifetime money in/out (cents), set by PayeeController::index.
+            'inflow_total' => $this->inflow_total ?? null,
+            'outflow_total' => $this->outflow_total ?? null,
         ];
     }
 }

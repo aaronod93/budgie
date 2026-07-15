@@ -34,13 +34,61 @@ class PayeeController extends Controller
             ->get(['id', 'payee_id', 'category_id', 'amount'])
             ->keyBy('payee_id');
 
+        // Lifetime money in/out per payee, so the list can show how much has
+        // flowed to and from each one across the whole budget.
+        $totals = Transaction::query()
+            ->where('budget_id', $budget->id)
+            ->whereNotNull('payee_id')
+            ->groupBy('payee_id')
+            ->selectRaw('payee_id')
+            ->selectRaw('SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS inflow')
+            ->selectRaw('SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS outflow')
+            ->get()
+            ->keyBy('payee_id');
+
         foreach ($payees as $payee) {
             $last = $latest->get($payee->id);
             $payee->last_category_uuid = $last?->category?->uuid;
             $payee->last_flow = $last === null ? null : ($last->amount < 0 ? 'outflow' : 'inflow');
+
+            $total = $totals->get($payee->id);
+            $payee->inflow_total = (int) ($total->inflow ?? 0);
+            $payee->outflow_total = (int) ($total->outflow ?? 0);
         }
 
         return PayeeResource::collection($payees);
+    }
+
+    public function store(Request $request, Budget $budget)
+    {
+        Gate::authorize('update', $budget);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:16'],
+        ]);
+
+        $name = trim($data['name']);
+
+        $exists = $budget->payees()
+            ->whereNull('transfer_account_id')
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages(['name' => 'A payee with that name already exists.']);
+        }
+
+        $payee = $budget->payees()->create([
+            'name' => $name,
+            'icon' => $data['icon'] ?? null,
+        ]);
+
+        $payee->load(['transferAccount', 'defaultCategory']);
+        $payee->inflow_total = 0;
+        $payee->outflow_total = 0;
+
+        return (new PayeeResource($payee))->response()->setStatusCode(201);
     }
 
     public function update(Request $request, Budget $budget, Payee $payee)

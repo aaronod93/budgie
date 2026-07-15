@@ -102,19 +102,19 @@ async function submit() {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-paper-200 p-6 text-ink-800 shadow-xl">
+    <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto bg-paper-200 p-6 text-ink-800 shadow-xl">
       <h2 class="mb-1 text-lg font-semibold">Import transactions</h2>
       <p class="mb-4 text-sm text-mist-700">
         Upload a CSV from your bank, map the columns, and Lil' Budgie will skip anything it has seen before.
       </p>
 
       <div v-if="result" class="space-y-4">
-        <p class="rounded-md bg-mist-500/20 px-4 py-3 text-ink-700">
+        <p class=" bg-mist-500/20 px-4 py-3 text-ink-700">
           Imported {{ result.imported }} transaction(s); skipped {{ result.skipped }} duplicate(s).
           New rows are marked <strong>New</strong> until you approve them.
         </p>
         <div class="flex justify-end">
-          <button class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500" @click="emit('close')">Done</button>
+          <button class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500" @click="emit('close')">Done</button>
         </div>
       </div>
 
@@ -127,7 +127,7 @@ async function submit() {
               <input v-model="hasHeader" type="checkbox"> First row is a header
             </label>
             <label class="text-sm">Date format
-              <select v-model="dateFormat" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model="dateFormat" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option value="auto">Auto (AU: DD/MM/YYYY)</option>
                 <option value="dmy">DD/MM/YYYY</option>
                 <option value="mdy">MM/DD/YYYY</option>
@@ -135,41 +135,41 @@ async function submit() {
               </select>
             </label>
             <label class="text-sm">Amount layout
-              <select v-model="amountMode" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model="amountMode" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option value="single">One signed column</option>
                 <option value="split">Debit + credit columns</option>
               </select>
             </label>
             <label class="text-sm">Date column
-              <select v-model.number="dateCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model.number="dateCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
               </select>
             </label>
             <label class="text-sm">Payee column
-              <select v-model.number="payeeCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model.number="payeeCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option :value="-1">—</option>
                 <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
               </select>
             </label>
             <label class="text-sm">Memo column
-              <select v-model.number="memoCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model.number="memoCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option :value="-1">—</option>
                 <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
               </select>
             </label>
             <label v-if="amountMode === 'single'" class="text-sm">Amount column
-              <select v-model.number="amountCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+              <select v-model.number="amountCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                 <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
               </select>
             </label>
             <template v-else>
               <label class="text-sm">Outflow column
-                <select v-model.number="outflowCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+                <select v-model.number="outflowCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                   <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
                 </select>
               </label>
               <label class="text-sm">Inflow column
-                <select v-model.number="inflowCol" class="mt-1 w-full rounded-md border border-paper-400 bg-paper-50 px-2 py-1">
+                <select v-model.number="inflowCol" class="mt-1 w-full border border-paper-400 bg-paper-50 px-2 py-1">
                   <option v-for="(name, i) in columns" :key="i" :value="i">{{ name }}</option>
                 </select>
               </label>
@@ -179,7 +179,7 @@ async function submit() {
           <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-mist-700">
             Preview — {{ normalized.length }} importable row(s) from {{ fileName }}
           </p>
-          <div class="mb-4 overflow-x-auto rounded-lg border border-paper-300">
+          <div class="mb-4 overflow-x-auto border border-paper-300">
             <table class="w-full text-sm">
               <tbody>
                 <tr v-for="(row, i) in preview" :key="i" class="border-b border-paper-300 last:border-0">
@@ -198,10 +198,10 @@ async function submit() {
         <p v-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
 
         <div class="flex justify-end gap-2">
-          <button class="rounded-md px-4 py-2 text-ink-600 hover:bg-paper-300" @click="emit('close')">Cancel</button>
+          <button class=" px-4 py-2 text-ink-600 hover:bg-paper-300" @click="emit('close')">Cancel</button>
           <button
             :disabled="busy || normalized.length === 0"
-            class="rounded-md bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
+            class=" bg-accent-400 px-4 py-2 font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
             @click="submit"
           >
             {{ busy ? 'Importing…' : `Import ${normalized.length} row(s)` }}
