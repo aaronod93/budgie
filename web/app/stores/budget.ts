@@ -43,6 +43,14 @@ export interface CategoryTarget {
   type: 'refill_monthly' | 'monthly_builder' | 'balance_by_date'
   amount: number
   target_date: string | null
+  cadence: 'week' | 'fortnight' | 'month' | 'quarter' | 'year'
+  starts_on: string | null
+  ends_on: string | null
+  repeat_times: number | null
+  needed_this_month: number
+  snoozed: boolean
+  snoozed_months: string[]
+  snoozed_until: string | null
   underfunded: number
   progress: number
 }
@@ -169,8 +177,25 @@ export const useBudgetStore = defineStore('budget', () => {
     )
   }
 
-  async function setTarget(categoryUuid: string, target: { type: string, amount: number, target_date?: string | null }): Promise<void> {
+  async function setTarget(categoryUuid: string, target: {
+    type: string
+    amount: number
+    target_date?: string | null
+    cadence?: string
+    starts_on?: string | null
+    ends_on?: string | null
+    repeat_times?: number | null
+  }): Promise<void> {
     await apiFetch(`${base.value}/categories/${categoryUuid}/target`, { method: 'PUT', body: target })
+    await loadMonth()
+  }
+
+  /** Replace the target's snooze state (explicit month list + optional date). */
+  async function snoozeTarget(categoryUuid: string, months: string[], until: string | null): Promise<void> {
+    await apiFetch(`${base.value}/categories/${categoryUuid}/target-snooze`, {
+      method: 'PUT',
+      body: { months, until },
+    })
     await loadMonth()
   }
 
@@ -262,7 +287,7 @@ export const useBudgetStore = defineStore('budget', () => {
     budgets, current, accounts, groups, month, monthKey, initialized, base,
     invitations, liveMessage,
     init, selectBudget, createBudget, loadAccounts, loadGroups, addAccount,
-    loadMonth, shiftMonth, assign, moveMoney, assignUnderfunded, setTarget, removeTarget,
+    loadMonth, shiftMonth, assign, moveMoney, assignUnderfunded, setTarget, snoozeTarget, removeTarget,
     createGroup, updateGroup, deleteGroup, reorderGroups,
     createCategory, updateCategory, deleteCategory, reorderCategories,
     loadInvitations, acceptInvitation, declineInvitation, refreshFromLive,

@@ -69,7 +69,16 @@ async function changeRole(member: Member, role: string) {
 async function removeMember(member: Member) {
   if (!member.uuid) return
   const self = member.email === auth.user?.email
-  if (!confirm(self ? 'Leave this budget?' : `Remove ${member.name} from this budget?`)) return
+  try {
+    await $confirm(
+      self ? 'Leave this budget?' : `Remove ${member.name}?`,
+      self
+        ? 'You will lose access until someone invites you again.'
+        : 'They will immediately lose access to this budget.',
+      self ? 'Leave' : 'Remove',
+      'Cancel',
+    )
+  } catch { return }
   await run(() => apiFetch(`${store.base}/members/${member.uuid}`, { method: 'DELETE' }))
   if (self) window.location.href = '/'
 }
@@ -105,10 +114,10 @@ function timeAgo(iso: string): string {
       Budget with your partner: editors can do everything except manage sharing; viewers can only look.
     </p>
 
-    <p v-if="error" class="mb-4 bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+    <p v-if="error" class="mb-4 rounded-sm bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
 
     <!-- Members -->
-    <section class="mb-6 border border-paper-300 bg-paper-200 text-ink-800">
+    <section class="mb-6 rounded-sm border border-paper-300 bg-paper-200 text-ink-800">
       <p class="border-b border-paper-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-700">Members</p>
       <div v-for="member in members" :key="member.email" class="flex items-center justify-between border-b border-paper-300 px-4 py-3 last:border-0">
         <div>
@@ -128,7 +137,7 @@ function timeAgo(iso: string): string {
             <option value="editor">Editor</option>
             <option value="viewer">Viewer</option>
           </UiSelect>
-          <span v-else class=" bg-paper-100 px-2.5 py-0.5 text-xs font-medium capitalize text-ink-600">
+          <span v-else class=" rounded-sm bg-paper-100 px-2.5 py-0.5 text-xs font-medium capitalize text-ink-600">
             {{ member.role }}
           </span>
           <button
@@ -143,7 +152,7 @@ function timeAgo(iso: string): string {
     </section>
 
     <!-- Invite (owner only) -->
-    <section v-if="isOwner" class="mb-6 border border-paper-300 bg-paper-200 p-4 text-ink-800">
+    <section v-if="isOwner" class="mb-6 rounded-sm border border-paper-300 bg-paper-200 p-4 text-ink-800">
       <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-mist-700">Invite someone</p>
       <form class="flex flex-wrap gap-2" @submit.prevent="invite">
         <input
@@ -151,7 +160,7 @@ function timeAgo(iso: string): string {
           type="email"
           required
           placeholder="partner@example.com"
-          class="min-w-56 flex-1 border border-paper-400 bg-paper-50 px-3 py-2 text-sm"
+          class="min-w-56 flex-1 rounded-sm border border-paper-400 bg-white px-3 py-2 text-sm"
         >
         <UiSelect v-model="inviteForm.role" class="w-auto">
           <option value="editor">Editor</option>
@@ -160,7 +169,7 @@ function timeAgo(iso: string): string {
         <button
           type="submit"
           :disabled="inviteBusy"
-          class=" bg-accent-400 px-4 py-2 text-sm font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
+          class=" rounded-sm bg-accent-400 px-4 py-2 text-sm font-medium text-ink-900 hover:bg-accent-500 disabled:opacity-50"
         >
           Send invite
         </button>
@@ -176,7 +185,7 @@ function timeAgo(iso: string): string {
     </section>
 
     <!-- Activity -->
-    <section class=" border border-paper-300 bg-paper-200 text-ink-800">
+    <section class=" rounded-sm border border-paper-300 bg-paper-200 text-ink-800">
       <p class="border-b border-paper-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-mist-700">Recent activity</p>
       <p v-if="activity.length === 0" class="px-4 py-6 text-center text-sm text-mist-700">Nothing yet.</p>
       <div v-for="(entry, i) in activity" :key="i" class="flex items-baseline justify-between gap-4 border-b border-paper-300 px-4 py-2 text-sm last:border-0">

@@ -13,8 +13,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
 const classes = computed(() => [
-  'w-full border border-paper-400 bg-paper-50 text-ink-800',
-  'focus:border-accent-400 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
+  'w-full rounded-sm border border-paper-400 bg-white text-ink-800',
+  'focus:border-ink-500 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
   props.size === 'sm' ? 'px-2 py-1 text-sm' : 'px-3 py-2',
 ])
 </script>

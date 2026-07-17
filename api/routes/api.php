@@ -55,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('payees/{payee}/merge', [PayeeController::class, 'merge']);
 
             Route::put('categories/{category}/target', [TargetController::class, 'store']);
+            Route::put('categories/{category}/target-snooze', [TargetController::class, 'snooze']);
             Route::delete('categories/{category}/target', [TargetController::class, 'destroy']);
             Route::post('months/{month}/assign-underfunded', AssignUnderfundedController::class)
                 ->where('month', '\d{4}-\d{2}');

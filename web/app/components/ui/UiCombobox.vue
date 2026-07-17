@@ -184,8 +184,8 @@ onBeforeUnmount(() => window.removeEventListener('scroll', position, true))
       role="combobox"
       :aria-expanded="open"
       :class="[
-        'w-full border border-paper-400 bg-paper-50 text-ink-800',
-        'focus:border-accent-400 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
+        'w-full rounded-sm border border-paper-400 bg-white text-ink-800',
+        'focus:border-ink-500 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
         size === 'sm' ? 'px-2 py-1.5 text-sm' : 'px-3 py-2',
       ]"
       @focus="openMenu"
@@ -200,7 +200,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', position, true))
       <div
         v-if="open && (navItems.length || footerLabel)"
         ref="listEl"
-        class="fixed z-50 overflow-hidden border border-paper-400 bg-white shadow-xl"
+        class="fixed z-50 overflow-hidden rounded-sm border border-paper-400 bg-white shadow-xl"
         :style="{
           left: `${pos.left}px`,
           width: `${Math.max(pos.width, 224)}px`,
@@ -214,8 +214,8 @@ onBeforeUnmount(() => window.removeEventListener('scroll', position, true))
           type="button"
           :data-highlighted="highlighted === 0"
           :class="[
-            'flex w-full items-center gap-2 border-b border-paper-200 px-3 py-2 text-left text-sm font-medium text-accent-600',
-            highlighted === 0 ? 'bg-accent-100' : 'hover:bg-paper-100',
+            'flex w-full items-center gap-2 border-b border-paper-200 px-3 py-2 text-left text-sm font-medium text-ink-600',
+            highlighted === 0 ? 'bg-mist-200/50' : 'hover:bg-paper-100',
           ]"
           @mousedown.prevent="pick(navItems[0]!)"
           @mousemove="highlighted = 0"
@@ -233,7 +233,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', position, true))
             :data-highlighted="(showCreate ? index + 1 : index) === highlighted"
             :class="[
               'block w-full px-3 py-1.5 text-left text-sm text-ink-800',
-              (showCreate ? index + 1 : index) === highlighted ? 'bg-accent-100' : 'hover:bg-paper-100',
+              (showCreate ? index + 1 : index) === highlighted ? 'bg-mist-200/50' : 'hover:bg-paper-100',
               option.value === modelValue ? 'font-semibold' : '',
             ]"
             @mousedown.prevent="pick({ value: option.value, label: option.label, create: false, option })"
@@ -246,7 +246,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', position, true))
         <button
           v-if="footerLabel"
           type="button"
-          class="block w-full border-t border-paper-200 px-3 py-2 text-left text-sm font-medium text-accent-600 hover:bg-paper-100"
+          class="block w-full border-t border-paper-200 px-3 py-2 text-left text-sm font-medium text-ink-600 hover:bg-paper-100"
           @mousedown.prevent="goFooter"
         >
           {{ footerLabel }}

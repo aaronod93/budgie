@@ -87,7 +87,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         <button
           v-for="months in [3, 6, 12]"
           :key="months"
-          class=" border px-3 py-1.5 text-sm"
+          class=" rounded-sm border px-3 py-1.5 text-sm"
           :class="rangeMonths === months
             ? 'border-accent-400 bg-accent-100 font-medium text-accent-600'
             : 'border-paper-400 text-ink-700 hover:bg-paper-100'"
@@ -98,22 +98,22 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
       </div>
     </header>
 
-    <div v-if="loading && !spending" class="py-20 text-center text-mist-700">Loading…</div>
+    <div v-if="loading && !spending" class="py-16"><UiLoading :size="220" label="Crunching the numbers…" /></div>
 
     <template v-else-if="spending">
       <!-- KPI row -->
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <div class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <p class="text-3xl font-bold text-ink-800">
             {{ ageOfMoney === null ? '—' : `${ageOfMoney} days` }}
           </p>
           <p class="mt-1 text-sm text-mist-700">Age of Money (aim for 30+)</p>
         </div>
-        <div class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <div class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <p class="text-3xl font-bold text-ink-800">{{ formatMoney(spending.total, store.current?.currency) }}</p>
           <p class="mt-1 text-sm text-mist-700">Spending, last {{ rangeMonths }} months</p>
         </div>
-        <div class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <div class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <p class="text-3xl font-bold" :class="currentNet < 0 ? 'text-red-700' : 'text-ink-800'">
             {{ formatMoney(currentNet, store.current?.currency) }}
           </p>
@@ -123,7 +123,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Spending by category/payee: sorted horizontal bars -->
-        <section class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <section class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="font-semibold">Spending by {{ groupBy }}</h2>
             <div class="w-32">
@@ -144,7 +144,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
                 <span class="text-ink-700">{{ group.name }}</span>
                 <span class="font-medium text-ink-800">{{ formatMoney(group.amount, store.current?.currency) }}</span>
               </div>
-              <div class="h-2.5 overflow-hidden bg-paper-50">
+              <div class="h-2.5 rounded-sm overflow-hidden bg-paper-50">
                 <div
                   class="h-full"
                   :style="{ width: `${(group.amount / maxSpending) * 100}%`, background: SERIES_1 }"
@@ -155,7 +155,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Monthly spending trend -->
-        <section class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <section class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Monthly spending</h2>
           <ChartsColumnChart
             :labels="spending.monthly.map(m => monthLabel(m.month))"
@@ -165,7 +165,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Income vs expense -->
-        <section class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <section class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Income vs expense</h2>
           <ChartsColumnChart
             v-if="incomeExpense"
@@ -179,7 +179,7 @@ const currentNet = computed(() => netWorthWindow.value.at(-1)?.net ?? 0)
         </section>
 
         <!-- Net worth -->
-        <section class=" border border-paper-300 bg-paper-200 p-5 text-ink-800">
+        <section class=" rounded-sm border border-paper-300 bg-paper-200 p-5 text-ink-800">
           <h2 class="mb-4 font-semibold">Net worth</h2>
           <p v-if="netWorthWindow.length === 0" class="py-8 text-center text-sm text-mist-700">No data yet.</p>
           <ChartsLineChart

@@ -39,23 +39,3 @@
   --color-mist-700: #4c6b7e;
 }
 
-/*
- * vue-datepicker (UiDateField) themed onto the Lil' Budgie palette via its
- * CSS variables — pickers sit on paper cards with square corners.
- */
-.dp__theme_light {
-  --dp-font-family: "Work Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --dp-background-color: #f4f3f0;
-  --dp-text-color: #191e2a;
-  --dp-border-color: #b9b6ac;
-  --dp-menu-border-color: #b9b6ac;
-  --dp-border-color-hover: #e3854e;
-  --dp-border-color-focus: #e3854e;
-  --dp-primary-color: #e3854e;
-  --dp-primary-text-color: #131722;
-  --dp-hover-color: #f8e3d4;
-  --dp-hover-text-color: #191e2a;
-  --dp-secondary-color: #4c6b7e;
-  --dp-icon-color: #4c6b7e;
-  --dp-border-radius: 0;
-}

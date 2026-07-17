@@ -177,8 +177,8 @@ onBeforeUnmount(() => {
     type="button"
     title="Pick an icon"
     :class="[
-      'flex items-center justify-center border border-paper-400 bg-paper-50 text-ink-800',
-      'hover:border-accent-400 focus:border-accent-400 focus:outline-none',
+      'flex items-center justify-center rounded-sm border border-paper-400 bg-white text-ink-800',
+      'hover:border-ink-500 focus:border-ink-500 focus:outline-none',
       size === 'sm' ? 'h-8 w-9 text-base' : 'h-10 w-11 text-lg',
     ]"
     @click="toggle"
@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
     <div
       v-if="open"
       ref="panelEl"
-      class="fixed z-50 flex flex-col overflow-hidden border border-paper-400 bg-paper-50 text-ink-800 shadow-xl"
+      class="fixed z-50 flex flex-col overflow-hidden rounded-sm border border-paper-400 bg-white text-ink-800 shadow-xl"
       :style="panelStyle"
     >
       <div class="border-b border-paper-300 p-2">
@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
           v-model="search"
           placeholder="Search icons…"
           autofocus
-          class="w-full border border-paper-400 bg-white px-2 py-1 text-sm focus:border-accent-400 focus:outline-none"
+          class="w-full rounded-sm border border-paper-400 bg-white px-2 py-1 text-sm focus:border-ink-500 focus:outline-none"
         >
       </div>
 
@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
           type="button"
           :title="item.k"
           :class="[
-            'flex h-8 w-8 items-center justify-center text-lg hover:bg-accent-100',
+            'flex h-8 w-8 items-center justify-center rounded-sm text-lg hover:bg-accent-100',
             item.e === modelValue ? 'bg-accent-100 ring-1 ring-accent-400' : '',
           ]"
           @click="choose(item.e)"
@@ -227,12 +227,12 @@ onBeforeUnmount(() => {
           v-model="custom"
           placeholder="Or paste any emoji"
           maxlength="8"
-          class="w-full border border-paper-400 bg-white px-2 py-1 text-sm focus:border-accent-400 focus:outline-none"
+          class="w-full rounded-sm border border-paper-400 bg-white px-2 py-1 text-sm focus:border-ink-500 focus:outline-none"
           @keydown.enter.prevent="applyCustom"
         >
         <button
           type="button"
-          class="shrink-0 bg-accent-400 px-2.5 py-1 text-xs font-medium text-ink-900 hover:bg-accent-500"
+          class="shrink-0 rounded-sm bg-accent-400 px-2.5 py-1 text-xs font-medium text-ink-900 hover:bg-accent-500"
           @click="applyCustom"
         >
           Set
@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           title="Remove icon"
-          class="shrink-0 border border-paper-400 px-2 py-1 text-xs text-mist-700 hover:bg-paper-200"
+          class="shrink-0 rounded-sm border border-paper-400 px-2 py-1 text-xs text-mist-700 hover:bg-paper-200"
           @click="choose('')"
         >
           Clear

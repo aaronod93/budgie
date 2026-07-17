@@ -193,32 +193,218 @@ class MonthService
 
     /**
      * Target progress for one category in the viewed month (saving ahead for
-     * irregular expenses).
+     * irregular expenses). Returns null when the target is not active in the
+     * viewed month (before its start, after its end, or past its repeats).
      */
-    private function targetPayload(Target $goal, int $assigned, int $available, CarbonImmutable $month): array
+    private function targetPayload(Target $goal, int $assigned, int $available, CarbonImmutable $month): ?array
     {
-        [$underfunded, $progressBasis] = match ($goal->type) {
-            // "Needed for spending": refill available up to the amount.
-            'refill_monthly' => [max(0, $goal->amount - $available), $available],
-            // "Savings builder": assign the amount every month.
-            'monthly_builder' => [max(0, $goal->amount - $assigned), $assigned],
+        if (! $this->targetIsActive($goal, $month)) {
+            return null;
+        }
+
+        // How much this month asks for, translated from the target's cadence.
+        $monthAmount = $this->cadenceAmountForMonth($goal, $month);
+
+        $pct = fn (int $basis, int $of) => $of <= 0
+            ? 100
+            : max(0, min(100, (int) round($basis / $of * 100)));
+
+        [$underfunded, $progress, $neededThisMonth] = match ($goal->type) {
+            // "Needed for spending": refill the pot by each due date.
+            'refill_monthly' => $this->refillNeed($goal, $assigned, $available, $month, $pct, $monthAmount),
+            // "Savings builder": assign this month's amount each month.
+            'monthly_builder' => [max(0, $monthAmount - $assigned), $pct($assigned, $monthAmount), $monthAmount],
             // "Balance by date": spread what is still needed over the months left.
-            'balance_by_date' => $this->balanceByDate($goal, $assigned, $available, $month),
+            'balance_by_date' => $this->balanceByDate($goal, $assigned, $available, $month, $pct),
         };
+
+        $snoozed = $this->targetIsSnoozed($goal, $month);
 
         return [
             'type' => $goal->type,
             'amount' => $goal->amount,
             'target_date' => $goal->target_date?->toDateString(),
-            'underfunded' => $underfunded,
-            'progress' => $goal->amount <= 0
-                ? 100
-                : max(0, min(100, (int) round($progressBasis / $goal->amount * 100))),
+            'cadence' => $goal->cadence ?? 'month',
+            'starts_on' => $goal->starts_on?->toDateString(),
+            'ends_on' => $goal->ends_on?->toDateString(),
+            'repeat_times' => $goal->repeat_times,
+            'needed_this_month' => $neededThisMonth,
+            'snoozed' => $snoozed,
+            'snoozed_months' => $goal->snoozed_months ?? [],
+            'snoozed_until' => $goal->snoozed_until?->toDateString(),
+            'underfunded' => $snoozed ? 0 : $underfunded,
+            'progress' => $progress,
         ];
     }
 
-    /** @return array{0: int, 1: int} [underfunded, progressBasis] */
-    private function balanceByDate(Target $goal, int $assigned, int $available, CarbonImmutable $month): array
+    /**
+     * A refill target's ask for the viewed month.
+     *
+     * Week/fortnight/month cadences fall due inside the month, so the pot must
+     * cover the month's occurrences outright. Quarter/year cadences save ahead
+     * toward the window's due month: whatever is STILL needed is spread as
+     * evenly as possible over the months remaining (like balance-by-date, but
+     * recurring per window) — start late and the shares grow, save ahead and
+     * they shrink.
+     *
+     * @return array{0: int, 1: int, 2: int} [underfunded, progress %, needed this month]
+     */
+    private function refillNeed(Target $goal, int $assigned, int $available, CarbonImmutable $month, callable $pct, int $monthAmount): array
+    {
+        $periodMonths = match ($goal->cadence ?? 'month') {
+            'quarter' => 3,
+            'year' => 12,
+            default => null,
+        };
+
+        if ($periodMonths === null) {
+            return [max(0, $monthAmount - $available), $pct($available, $monthAmount), $monthAmount];
+        }
+
+        $anchor = $this->savingStartMonth($goal) ?? $month->startOfMonth();
+        $index = ($month->year - $anchor->year) * 12 + ($month->month - $anchor->month);
+        $monthsRemaining = $periodMonths - max(0, $index % $periodMonths);
+
+        // What the pot would hold with nothing assigned this month.
+        $baseline = $available - $assigned;
+        $stillNeeded = max(0, $goal->amount - $baseline);
+        $neededThisMonth = (int) ceil($stillNeeded / $monthsRemaining);
+
+        return [max(0, $neededThisMonth - $assigned), $pct($available, $goal->amount), $neededThisMonth];
+    }
+
+    /** Within [starts_on, ends_on] (or starts_on + repeat_times periods)? */
+    private function targetIsActive(Target $goal, CarbonImmutable $month): bool
+    {
+        $start = $this->savingStartMonth($goal);
+        if ($start !== null && $month->lessThan($start)) {
+            return false;
+        }
+
+        $end = $goal->ends_on?->startOfMonth();
+        if ($end === null && $goal->repeat_times !== null && $goal->starts_on !== null) {
+            $end = $this->lastOccurrence($goal)->startOfMonth();
+        }
+
+        return $end === null || $month->lessThanOrEqualTo($end);
+    }
+
+    /**
+     * The first month the target asks for money. For refill targets the date
+     * is a DUE date ("first amount needed by"), so quarter/year targets start
+     * saving early enough that the pot is full in the due month. Builder
+     * targets treat the date as the cycle's starting point.
+     */
+    private function savingStartMonth(Target $goal): ?CarbonImmutable
+    {
+        if ($goal->starts_on === null) {
+            return null;
+        }
+
+        $start = $goal->starts_on->startOfMonth();
+        $period = match ($goal->cadence ?? 'month') {
+            'quarter' => 3,
+            'year' => 12,
+            default => null,
+        };
+
+        if ($period !== null && $goal->type === 'refill_monthly') {
+            return $start->subMonthsNoOverflow($period - 1);
+        }
+
+        return $start;
+    }
+
+    /** The date of the final occurrence for a repeat_times-bounded target. */
+    private function lastOccurrence(Target $goal): CarbonImmutable
+    {
+        $start = CarbonImmutable::parse($goal->starts_on);
+        $n = max(0, $goal->repeat_times - 1);
+
+        return match ($goal->cadence ?? 'month') {
+            'week' => $start->addDays(7 * $n),
+            'fortnight' => $start->addDays(14 * $n),
+            'month' => $start->addMonthsNoOverflow($n),
+            'quarter' => $start->addMonthsNoOverflow(3 * $n),
+            'year' => $start->addMonthsNoOverflow(12 * $n),
+        };
+    }
+
+    private function targetIsSnoozed(Target $goal, CarbonImmutable $month): bool
+    {
+        if (in_array($month->format('Y-m'), $goal->snoozed_months ?? [], true)) {
+            return true;
+        }
+
+        return $goal->snoozed_until !== null
+            && $month->startOfMonth()->lessThanOrEqualTo($goal->snoozed_until->startOfMonth());
+    }
+
+    /**
+     * Translate the cadence into this month's ask: week/fortnight targets sum
+     * their occurrences that fall inside the month (anchored on starts_on);
+     * quarter/year targets drip evenly across their period, with rounding
+     * remainders landing on the period's final month.
+     */
+    private function cadenceAmountForMonth(Target $goal, CarbonImmutable $month): int
+    {
+        return match ($goal->cadence ?? 'month') {
+            'month' => $goal->amount,
+            'week' => $goal->amount * $this->occurrencesInMonth($goal, $month, 7),
+            'fortnight' => $goal->amount * $this->occurrencesInMonth($goal, $month, 14),
+            'quarter' => $this->spreadOverPeriod($goal, $month, 3),
+            'year' => $this->spreadOverPeriod($goal, $month, 12),
+        };
+    }
+
+    /** Occurrences of an every-N-days cycle within the given month. */
+    private function occurrencesInMonth(Target $goal, CarbonImmutable $month, int $step): int
+    {
+        $start = $month->startOfMonth();
+        $end = $month->endOfMonth();
+        $anchor = $goal->starts_on !== null ? CarbonImmutable::parse($goal->starts_on) : $start;
+
+        if ($anchor->greaterThan($end)) {
+            return 0;
+        }
+
+        // First occurrence on/after the start of the month.
+        $daysBehind = (int) $anchor->diffInDays($start, false);
+        $skips = $daysBehind > 0 ? intdiv($daysBehind + $step - 1, $step) : 0;
+        $occurrence = $anchor->addDays($skips * $step);
+
+        $count = 0;
+        while ($occurrence->lessThanOrEqualTo($end)) {
+            $count++;
+            $occurrence = $occurrence->addDays($step);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Even monthly share of a builder quarter/year target within its saving
+     * window, remainder on the window's last month. (Refill quarter/year needs
+     * are computed in refillNeed instead — they track the pot, not the month.)
+     */
+    private function spreadOverPeriod(Target $goal, CarbonImmutable $month, int $periodMonths): int
+    {
+        $anchor = ($goal->starts_on !== null ? $this->savingStartMonth($goal) : $month->startOfMonth());
+        $index = ($month->year - $anchor->year) * 12 + ($month->month - $anchor->month);
+        if ($index < 0) {
+            return 0;
+        }
+
+        $position = $index % $periodMonths;
+        $base = intdiv($goal->amount, $periodMonths);
+
+        return $position === $periodMonths - 1
+            ? $goal->amount - $base * ($periodMonths - 1)
+            : $base;
+    }
+
+    /** @return array{0: int, 1: int, 2: int} [underfunded, progress %, needed this month] */
+    private function balanceByDate(Target $goal, int $assigned, int $available, CarbonImmutable $month, callable $pct): array
     {
         $end = $goal->target_date?->startOfMonth() ?? $month;
         $monthsRemaining = max(
@@ -231,7 +417,7 @@ class MonthService
         $stillNeeded = max(0, $goal->amount - $baseline);
         $neededThisMonth = (int) ceil($stillNeeded / $monthsRemaining);
 
-        return [max(0, $neededThisMonth - $assigned), $available];
+        return [max(0, $neededThisMonth - $assigned), $pct($available, $goal->amount), $neededThisMonth];
     }
 
     /** @return array<int, array<string, int>> category_id => ['YYYY-MM' => assigned] */

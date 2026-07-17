@@ -115,7 +115,7 @@ async function run(action: () => Promise<unknown>) {
       Set a default category to auto-categorise future transactions; merge duplicates to tidy history.
     </p>
 
-    <p v-if="error" class="mb-4 bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+    <p v-if="error" class="mb-4 rounded-sm bg-red-100 px-4 py-2 text-sm text-red-700">{{ error }}</p>
 
     <!-- Add payee -->
     <form class="mb-4 flex flex-wrap items-center gap-2" @submit.prevent="addPayee">
@@ -123,7 +123,7 @@ async function run(action: () => Promise<unknown>) {
       <input
         v-model="newName"
         placeholder="New payee name…"
-        class="min-w-0 flex-1 border border-paper-400 bg-paper-50 px-3 py-2 text-sm text-ink-800"
+        class="min-w-0 flex-1 rounded-sm border border-paper-400 bg-white px-3 py-2 text-sm text-ink-800"
         @keydown.enter.prevent="addPayee"
       >
       <UiButton type="submit" :loading="adding" :disabled="!newName.trim()">
@@ -131,7 +131,7 @@ async function run(action: () => Promise<unknown>) {
       </UiButton>
     </form>
 
-    <div class="overflow-x-auto border border-paper-300 bg-paper-200 text-ink-800">
+    <div class="overflow-x-auto rounded-sm border border-paper-300 bg-paper-200 text-ink-800">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-paper-300 text-left text-xs uppercase tracking-wide text-mist-700">
@@ -144,7 +144,7 @@ async function run(action: () => Promise<unknown>) {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="6" class="px-4 py-6 text-center text-mist-700">Loading…</td></tr>
+          <tr v-if="loading"><td colspan="6" class="px-4 py-8"><UiLoading label="Fetching payees…" /></td></tr>
           <tr v-else-if="regular.length === 0"><td colspan="6" class="px-4 py-6 text-center text-mist-700">No payees yet.</td></tr>
           <tr v-for="payee in regular" :key="payee.uuid" class="border-b border-paper-300 hover:bg-paper-100">
             <td class="px-4 py-2">
@@ -157,7 +157,7 @@ async function run(action: () => Promise<unknown>) {
               <input
                 v-if="renaming === payee.uuid"
                 v-model="renameValue"
-                class=" border border-accent-400 bg-paper-50 px-2 py-0.5"
+                class=" rounded-sm border border-accent-400 bg-white px-2 py-0.5"
                 autofocus
                 @keydown.enter.prevent="rename(payee)"
                 @keydown.esc="renaming = null"
@@ -210,7 +210,7 @@ async function run(action: () => Promise<unknown>) {
 
     <!-- Merge modal -->
     <div v-if="merging" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div class="w-full max-w-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
+      <div class="w-full max-w-sm rounded-sm bg-paper-200 p-6 text-ink-800 shadow-xl">
         <h2 class="mb-1 text-lg font-semibold">Merge "{{ merging.name }}"</h2>
         <p class="mb-4 text-sm text-mist-700">
           All of its transactions move to the payee you choose, and "{{ merging.name }}" is removed.

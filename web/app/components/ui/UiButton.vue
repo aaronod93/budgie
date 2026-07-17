@@ -17,14 +17,14 @@ const props = withDefaults(defineProps<{
 })
 
 const variants: Record<NonNullable<typeof props.variant>, string> = {
-  primary: 'bg-accent-400 font-medium text-ink-900 hover:bg-accent-500',
-  secondary: 'border border-accent-500 text-accent-600 hover:bg-accent-100',
+  primary: 'bg-ink-800 font-medium text-white hover:bg-ink-600',
+  secondary: 'border border-ink-500 text-ink-800 hover:bg-paper-100',
   ghost: 'text-ink-600 hover:bg-paper-300',
   danger: 'bg-red-600 font-medium text-white hover:bg-red-700',
 }
 
 const classes = computed(() => [
-  'relative inline-flex items-center justify-center gap-2 transition-colors',
+  'relative inline-flex items-center justify-center gap-2 rounded-sm transition-colors',
   'disabled:cursor-not-allowed disabled:opacity-60',
   props.size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-2',
   variants[props.variant],

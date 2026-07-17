@@ -19,7 +19,9 @@ function Start-InNewWindow([string]$title, [string]$command) {
 
 function Start-Backend {
     docker compose up -d 2>$null
-    Start-InNewWindow 'budgie-api'    "Set-Location '$root\api'; php artisan serve --host=0.0.0.0 --port=8000"
+    # Workers let the built-in server answer the app's parallel requests
+    # (month + accounts + payees fire together) instead of queueing them.
+    Start-InNewWindow 'budgie-api'    "Set-Location '$root\api'; `$env:PHP_CLI_SERVER_WORKERS = 8; php artisan serve --host=0.0.0.0 --port=8000"
     Start-InNewWindow 'budgie-reverb' "Set-Location '$root\api'; php artisan reverb:start --host=0.0.0.0 --port=8080"
     Start-InNewWindow 'budgie-worker' "Set-Location '$root\api'; php artisan queue:work --tries=3"
 }
@@ -34,7 +36,7 @@ switch ($Task) {
         docker compose up -d
     }
     'api' {
-        Set-Location "$root\api"; php artisan serve --host=0.0.0.0 --port=8000
+        Set-Location "$root\api"; $env:PHP_CLI_SERVER_WORKERS = 8; php artisan serve --host=0.0.0.0 --port=8000
     }
     'reverb' {
         Set-Location "$root\api"; php artisan reverb:start --host=0.0.0.0 --port=8080

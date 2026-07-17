@@ -131,9 +131,9 @@ onBeforeUnmount(() => {
       type="button"
       :disabled="disabled"
       :class="[
-        'flex w-full items-center justify-between gap-1 border bg-paper-50 text-left text-ink-800',
-        'focus:border-accent-400 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
-        open ? 'border-accent-400' : 'border-paper-400',
+        'flex w-full items-center justify-between gap-1 border bg-white text-left text-ink-800',
+        'focus:border-ink-500 focus:outline-none disabled:bg-paper-300 disabled:text-mist-700',
+        open ? 'border-ink-500' : 'border-paper-400',
         size === 'sm' ? 'px-2 py-1.5 text-sm' : 'px-3 py-2',
       ]"
       @click="toggle"
@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
       <div
         v-if="open"
         ref="menu"
-        class="fixed z-50 max-h-72 overflow-y-auto border border-paper-400 bg-white py-1 shadow-xl"
+        class="fixed z-50 max-h-72 overflow-y-auto rounded-sm border border-paper-400 bg-white py-1 shadow-xl"
         :style="{
           left: `${pos.left}px`,
           width: `${Math.max(pos.width, 208)}px`,
@@ -170,11 +170,11 @@ onBeforeUnmount(() => {
             :data-active="flat[highlighted]?.value === option.value"
             :class="[
               'flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink-800',
-              flat[highlighted]?.value === option.value ? 'bg-accent-100' : 'hover:bg-paper-100',
+              flat[highlighted]?.value === option.value ? 'bg-mist-200/50' : 'hover:bg-paper-100',
             ]"
             @mousedown.prevent="choose(option.value)"
           >
-            <span class="w-4 shrink-0 text-accent-600">{{ option.value === modelValue ? '✓' : '' }}</span>
+            <span class="w-4 shrink-0 text-ink-600">{{ option.value === modelValue ? '✓' : '' }}</span>
             <span class="truncate">{{ option.label }}</span>
           </button>
         </template>
